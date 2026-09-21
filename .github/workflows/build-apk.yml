@@ -20,6 +20,11 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          # Installa i pacchetti giusti per compileSdk 34. Va evitato il
+          # pacchetto obsoleto "tools" (default dell'azione), rimosso da Google:
+          # causa "Failed to find package 'tools'" e blocca il build.
+          packages: 'platform-tools platforms;android-34 build-tools;34.0.0'
 
       - name: Make gradlew executable
         run: chmod +x ./gradlew
