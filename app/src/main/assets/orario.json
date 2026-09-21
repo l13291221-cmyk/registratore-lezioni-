@@ -1,0 +1,34 @@
+{
+  "_nota": "Orario 2A auto - ITIS Enrico Fermi (provvisorio 26-27). Modifica liberamente. giorno = LUNEDI/MARTEDI/MERCOLEDI/GIOVEDI/VENERDI/SABATO/DOMENICA. inizio e fine in formato 24 ore HH:MM. Le materie con la stessa materia in ore consecutive sono unite in un unico blocco = un unico file.",
+  "lezioni": [
+    { "giorno": "LUNEDI", "materia": "TTRG", "inizio": "08:00", "fine": "10:00" },
+    { "giorno": "LUNEDI", "materia": "Fisica", "inizio": "10:00", "fine": "11:00" },
+    { "giorno": "LUNEDI", "materia": "Inglese", "inizio": "11:00", "fine": "12:00" },
+    { "giorno": "LUNEDI", "materia": "Matematica", "inizio": "12:00", "fine": "13:00" },
+
+    { "giorno": "MARTEDI", "materia": "Scienze-tecnologie-applicate", "inizio": "08:00", "fine": "10:00" },
+    { "giorno": "MARTEDI", "materia": "Scienze-terra-biologia", "inizio": "10:00", "fine": "11:00" },
+    { "giorno": "MARTEDI", "materia": "Chimica", "inizio": "11:00", "fine": "12:00" },
+    { "giorno": "MARTEDI", "materia": "Matematica", "inizio": "12:00", "fine": "13:00" },
+
+    { "giorno": "MERCOLEDI", "materia": "Storia", "inizio": "08:00", "fine": "10:00" },
+    { "giorno": "MERCOLEDI", "materia": "Scienze-tecnologie-applicate", "inizio": "10:00", "fine": "11:00" },
+    { "giorno": "MERCOLEDI", "materia": "Inglese", "inizio": "11:00", "fine": "12:00" },
+    { "giorno": "MERCOLEDI", "materia": "Religione", "inizio": "12:00", "fine": "13:00" },
+    { "giorno": "MERCOLEDI", "materia": "Scienze-terra-biologia", "inizio": "13:00", "fine": "14:00" },
+
+    { "giorno": "GIOVEDI", "materia": "Italiano", "inizio": "08:00", "fine": "09:00" },
+    { "giorno": "GIOVEDI", "materia": "Matematica", "inizio": "09:00", "fine": "11:00" },
+    { "giorno": "GIOVEDI", "materia": "Inglese", "inizio": "11:00", "fine": "12:00" },
+    { "giorno": "GIOVEDI", "materia": "Diritto-economia", "inizio": "12:00", "fine": "13:00" },
+
+    { "giorno": "VENERDI", "materia": "Scienze-motorie", "inizio": "08:00", "fine": "10:00" },
+    { "giorno": "VENERDI", "materia": "Chimica", "inizio": "10:00", "fine": "12:00" },
+    { "giorno": "VENERDI", "materia": "Diritto-economia", "inizio": "12:00", "fine": "13:00" },
+    { "giorno": "VENERDI", "materia": "Italiano", "inizio": "13:00", "fine": "14:00" },
+
+    { "giorno": "SABATO", "materia": "Fisica", "inizio": "08:00", "fine": "10:00" },
+    { "giorno": "SABATO", "materia": "TTRG", "inizio": "10:00", "fine": "11:00" },
+    { "giorno": "SABATO", "materia": "Italiano", "inizio": "11:00", "fine": "13:00" }
+  ]
+}

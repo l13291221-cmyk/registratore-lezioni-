@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Registratore Lezioni"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:paddingBottom="12dp" />
+
+        <TextView
+            android:id="@+id/stato"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="…"
+            android:textSize="16sp"
+            android:paddingBottom="16dp" />
+
+        <Button
+            android:id="@+id/btnPermessi"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="1. Concedi permessi (microfono, notifiche)" />
+
+        <Button
+            android:id="@+id/btnEsatti"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="2. Consenti sveglie precise" />
+
+        <Button
+            android:id="@+id/btnBatteria"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="3. Disattiva ottimizzazione batteria" />
+
+        <Button
+            android:id="@+id/btnAutostart"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="4. Avvio automatico (realme)" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#33808080"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp" />
+
+        <Button
+            android:id="@+id/btnAttivaAuto"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Attiva registrazione automatica" />
+
+        <Button
+            android:id="@+id/btnManuale"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Avvia registrazione manuale" />
+
+        <Button
+            android:id="@+id/btnRicaricaOrario"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Ricarica orario / aggiorna stato" />
+
+        <TextView
+            android:id="@+id/percorso"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textSize="12sp"
+            android:paddingTop="16dp"
+            android:textColor="#888888" />
+    </LinearLayout>
+</ScrollView>
