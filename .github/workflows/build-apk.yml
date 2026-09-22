@@ -8,6 +8,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -38,3 +40,17 @@ jobs:
           name: registratore-lezioni-apk
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+
+      # Pubblica l'APK come asset di una Release, così è scaricabile con un
+      # link diretto al file (niente zip da estrarre). Link stabile:
+      # https://github.com/<owner>/<repo>/releases/download/apk-latest/app-debug.apk
+      - name: Pubblica APK come Release (link diretto)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create apk-latest \
+            app/build/outputs/apk/debug/app-debug.apk \
+            --title "APK piu recente" \
+            --notes "Ultimo APK compilato automaticamente dal branch ${{ github.ref_name }}." \
+          || gh release upload apk-latest \
+            app/build/outputs/apk/debug/app-debug.apk --clobber
