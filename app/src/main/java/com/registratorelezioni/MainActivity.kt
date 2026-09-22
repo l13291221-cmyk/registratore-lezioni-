@@ -44,6 +44,9 @@ class MainActivity : AppCompatActivity() {
             b.root.postDelayed({ aggiornaStato() }, 700)
         }
         b.btnRicaricaOrario.setOnClickListener { aggiornaStato() }
+        b.btnGuarda.setOnClickListener {
+            startActivity(Intent(this, RegistrazioniActivity::class.java))
+        }
     }
 
     override fun onResume() {

@@ -36,6 +36,10 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".RegistrazioniActivity"
+            android:exported="false" />
+
         <service
             android:name=".RecordingService"
             android:enabled="true"
@@ -56,6 +60,17 @@
                 <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
+
+        <!-- Genera URI content:// per condividere le registrazioni con altre app. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
     </application>
 </manifest>

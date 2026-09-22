@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Espone la cartella dei file dell'app (getExternalFilesDir), dove
+         vivono le registrazioni divise per materia. Serve al FileProvider
+         per generare URI content:// condivisibili con altre app. -->
+    <external-files-path name="registrazioni" path="." />
+</paths>

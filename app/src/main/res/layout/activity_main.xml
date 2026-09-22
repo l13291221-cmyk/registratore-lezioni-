@@ -75,6 +75,12 @@
             android:layout_height="wrap_content"
             android:text="Ricarica orario / aggiorna stato" />
 
+        <Button
+            android:id="@+id/btnGuarda"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Guarda registrazioni" />
+
         <TextView
             android:id="@+id/percorso"
             android:layout_width="match_parent"
