@@ -127,6 +127,7 @@ class RecordingService : Service() {
 
                 if (primo || nuovo != segmento) {
                     primo = false
+                    fileInCorso = null
                     enc?.chiudi()
                     enc = null
                     segmento = nuovo
@@ -150,6 +151,7 @@ class RecordingService : Service() {
                         enc?.scrivi(buf, n)
                     } catch (_: Exception) {
                         // problema col file: lo chiudiamo, il microfono resta acceso
+                        fileInCorso = null
                         try { enc?.chiudi() } catch (_: Exception) { }
                         enc = null
                     }
@@ -158,6 +160,7 @@ class RecordingService : Service() {
         } catch (e: Exception) {
             messaggioFine = "⚠️ Errore: ${e.message}"
         } finally {
+            fileInCorso = null
             try { enc?.chiudi() } catch (_: Exception) { }
             try { rec?.stop() } catch (_: Exception) { }
             try { rec?.release() } catch (_: Exception) { }
@@ -176,7 +179,8 @@ class RecordingService : Service() {
             a.giorno == b.giorno && a.materia == b.materia && a.inizioMin == b.inizioMin
 
     private fun apriFile(materia: String): EncoderAac? = try {
-        EncoderAac(FileNaming.creaFile(this, materia), RATE, BITRATE)
+        val f = FileNaming.creaFile(this, materia)
+        EncoderAac(f, RATE, BITRATE).also { fileInCorso = f.absolutePath }
     } catch (_: Exception) {
         null
     }
@@ -295,6 +299,8 @@ class RecordingService : Service() {
         @Volatile var modoGiornata = false
         /** Materia del file che si sta scrivendo ora (null = nessun file aperto). */
         @Volatile var materiaInCorso: String? = null
+        /** Percorso del file che si sta scrivendo ora (non si può eliminare). */
+        @Volatile var fileInCorso: String? = null
         /** Ultimo stato leggibile, mostrato in app e in notifica. */
         @Volatile var stato: String = "⚪ Fermo"
 

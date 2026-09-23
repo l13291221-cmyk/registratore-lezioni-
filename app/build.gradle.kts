@@ -11,8 +11,8 @@ android {
         applicationId = "com.registratorelezioni"
         minSdk = 26          // Android 8.0 in su (il Realme 12 è Android 14)
         targetSdk = 34       // Android 14
-        versionCode = 3
-        versionName = "2.1"
+        versionCode = 4
+        versionName = "2.2"
     }
 
     // Chiave di firma fissa (inclusa nel repo): così ogni APK compilato da

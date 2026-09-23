@@ -9,6 +9,7 @@ import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
 import com.registratorelezioni.databinding.ActivityRegistrazioniBinding
@@ -18,7 +19,7 @@ import java.util.Locale
 /**
  * Elenca le registrazioni salvate, raggruppate per materia (una cartella per
  * materia sotto getExternalFilesDir). Ogni riga ha un tasto "Condividi" che
- * manda il file ad altre app tramite FileProvider.
+ * manda il file ad altre app tramite FileProvider, e un tasto 🗑 per eliminarlo.
  */
 class RegistrazioniActivity : AppCompatActivity() {
 
@@ -87,8 +88,13 @@ class RegistrazioniActivity : AppCompatActivity() {
         btn.text = "Condividi"
         btn.setOnClickListener { condividi(f) }
 
+        val elimina = Button(this)
+        elimina.text = "🗑"
+        elimina.setOnClickListener { elimina(f) }
+
         riga.addView(testo)
         riga.addView(btn)
+        riga.addView(elimina)
         return riga
     }
 
@@ -119,6 +125,27 @@ class RegistrazioniActivity : AppCompatActivity() {
         } catch (e: Exception) {
             Toast.makeText(this, "Impossibile condividere: ${e.message}", Toast.LENGTH_LONG).show()
         }
+    }
+
+    private fun elimina(f: File) {
+        if (f.absolutePath == RecordingService.fileInCorso) {
+            Toast.makeText(this, "Questa registrazione è ancora in corso: fermala prima.", Toast.LENGTH_LONG).show()
+            return
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Eliminare la registrazione?")
+            .setMessage("${etichetta(f, f.parentFile?.name ?: "")}\n\nNon si potrà recuperare.")
+            .setPositiveButton("Elimina") { _, _ ->
+                if (f.delete()) {
+                    // se la cartella della materia è rimasta vuota, toglila
+                    f.parentFile?.let { if (it.listFiles().isNullOrEmpty()) it.delete() }
+                    popola()
+                } else {
+                    Toast.makeText(this, "Impossibile eliminare il file", Toast.LENGTH_LONG).show()
+                }
+            }
+            .setNegativeButton("Annulla", null)
+            .show()
     }
 
     private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
