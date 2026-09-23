@@ -35,6 +35,10 @@
             android:name=".RegistrazioniActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".OrarioActivity"
+            android:exported="false" />
+
         <service
             android:name=".RecordingService"
             android:enabled="true"

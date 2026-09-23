@@ -83,29 +83,21 @@ chiave, quindi si aggiorna senza disinstallare.
 
 ## L'orario
 
-L'orario è nel file **`orario.json`**, che l'app copia alla prima apertura in:
+Dalla schermata principale premi **📅 Orario (modifica e foto)**:
 
-```
-Android/data/com.registratorelezioni/files/orario.json
-```
+- **Allega foto orario**: scegli lo screenshot dell'orario dalla galleria.
+  Resta salvato lì in alto (toccalo per ingrandirlo), così lo hai sotto mano
+  mentre inserisci le lezioni.
+- Per ogni giorno: **+ Aggiungi lezione**, **Modifica** o **✕** per
+  cancellare. Materia, ora di inizio e ora di fine.
+- **Ogni modifica si salva da sola**, e vale subito anche se la giornata è già
+  avviata.
+- **Cancella tutto l'orario**: per scriverne uno nuovo da zero (utile se
+  passi l'app a un amico di un'altra classe).
+- Ore consecutive della stessa materia = mettile come un'unica lezione
+  (es. 08:00–10:00) → un unico file.
 
-Puoi modificarlo dal telefono (file manager) o via USB. Formato:
-
-```json
-{
-  "lezioni": [
-    { "giorno": "LUNEDI", "materia": "Matematica", "inizio": "08:00", "fine": "09:00" }
-  ]
-}
-```
-
-- `giorno`: LUNEDI, MARTEDI, MERCOLEDI, GIOVEDI, VENERDI, SABATO, DOMENICA
-- `inizio` / `fine`: formato 24 ore `HH:MM`
-- Ore consecutive della stessa materia = mettile come un unico blocco (un file).
-
-Dopo aver modificato l'orario, apri l'app e premi **Ricarica orario / aggiorna
-stato**. L'orario viene letto quando premi **Avvia giornata**: se lo cambi a
-giornata già avviata, ferma e riavvia la giornata.
+L'orario è salvato nel file `Android/data/com.registratorelezioni/files/orario.json`.
 
 ---
 

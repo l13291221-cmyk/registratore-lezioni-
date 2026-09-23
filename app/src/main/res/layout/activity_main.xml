@@ -71,10 +71,10 @@
             android:text="Avvia registrazione manuale" />
 
         <Button
-            android:id="@+id/btnRicaricaOrario"
+            android:id="@+id/btnOrario"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Ricarica orario / aggiorna stato" />
+            android:text="📅 Orario (modifica e foto)" />
 
         <Button
             android:id="@+id/btnGuarda"

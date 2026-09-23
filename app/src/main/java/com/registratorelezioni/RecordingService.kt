@@ -81,7 +81,8 @@ class RecordingService : Service() {
 
     @SuppressLint("MissingPermission") // controllato in MainActivity prima di avviare
     private fun cicloCattura(giornata: Boolean) {
-        val lezioni = if (giornata) Timetable.carica(this) else emptyList()
+        var lezioni = if (giornata) Timetable.carica(this) else emptyList()
+        var versioneOrario = Timetable.versione
         val minBuf = AudioRecord.getMinBufferSize(RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
         val letto = maxOf(minBuf, RATE / 5 * 2) // ~200 ms per lettura
         var rec: AudioRecord? = null
@@ -106,9 +107,23 @@ class RecordingService : Service() {
                 val n = rec.read(buf, 0, buf.size)
                 if (n < 0) { messaggioFine = "⚠️ Microfono interrotto (errore $n)."; break }
 
+                if (giornata && versioneOrario != Timetable.versione) {
+                    // orario modificato dall'app mentre la giornata è in corso
+                    versioneOrario = Timetable.versione
+                    lezioni = Timetable.carica(this)
+                    if (segmento == null) primo = true // aggiorna "in attesa di…"
+                }
+
                 val nuovo: Lezione? = if (giornata) {
                     Timetable.lezioneCorrente(lezioni, Calendar.getInstance())
                 } else MANUALE
+
+                // stessa lezione (anche se hai appena cambiato l'ora di fine): continua lo stesso file
+                if (!primo && nuovo != null && nuovo != segmento && stessaLezione(nuovo, segmento)) {
+                    segmento = nuovo
+                    stato = testoRegistrazione(nuovo, giornata)
+                    aggiornaNotifica()
+                }
 
                 if (primo || nuovo != segmento) {
                     primo = false
@@ -126,8 +141,7 @@ class RecordingService : Service() {
                         stato = "🎙️ Microfono acceso · in attesa di ${prossima.materia} " +
                             "(${Timetable.formattaOra(prossima.inizioMin)})"
                     } else {
-                        stato = "🔴 STA REGISTRANDO: ${nuovo.materia}" +
-                            if (giornata) " (fino alle ${Timetable.formattaOra(nuovo.fineMin)})" else ""
+                        stato = testoRegistrazione(nuovo, giornata)
                     }
                     aggiornaNotifica()
                 }
@@ -152,6 +166,14 @@ class RecordingService : Service() {
             main.post { termina() }
         }
     }
+
+    private fun testoRegistrazione(l: Lezione, giornata: Boolean): String =
+        "🔴 STA REGISTRANDO: ${l.materia}" +
+            if (giornata) " (fino alle ${Timetable.formattaOra(l.fineMin)})" else ""
+
+    private fun stessaLezione(a: Lezione?, b: Lezione?): Boolean =
+        a != null && b != null &&
+            a.giorno == b.giorno && a.materia == b.materia && a.inizioMin == b.inizioMin
 
     private fun apriFile(materia: String): EncoderAac? = try {
         EncoderAac(FileNaming.creaFile(this, materia), RATE, BITRATE)

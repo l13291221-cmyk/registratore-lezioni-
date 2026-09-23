@@ -1,9 +1,11 @@
 package com.registratorelezioni
 
 import android.content.Context
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.util.Calendar
+import java.util.Locale
 
 /** Una lezione dell'orario settimanale. */
 data class Lezione(
@@ -25,6 +27,55 @@ object Timetable {
 
     fun fileOrario(context: Context): File =
         File(context.getExternalFilesDir(null), NOME_FILE)
+
+    /** Giorni nell'ordine della settimana scolastica, con il nome da mostrare. */
+    val GIORNI = listOf(
+        Calendar.MONDAY to "Lunedì",
+        Calendar.TUESDAY to "Martedì",
+        Calendar.WEDNESDAY to "Mercoledì",
+        Calendar.THURSDAY to "Giovedì",
+        Calendar.FRIDAY to "Venerdì",
+        Calendar.SATURDAY to "Sabato",
+        Calendar.SUNDAY to "Domenica"
+    )
+
+    /** Aumenta a ogni salvataggio: la registrazione in corso ricarica l'orario da sola. */
+    @Volatile var versione = 0
+        private set
+
+    /** Salva l'orario nel file orario.json (ordinato per giorno e ora). */
+    fun salva(context: Context, lezioni: List<Lezione>): Boolean {
+        val ordine = GIORNI.map { it.first }
+        val arr = JSONArray()
+        for (l in lezioni.sortedWith(compareBy({ ordine.indexOf(it.giorno) }, { it.inizioMin }))) {
+            arr.put(
+                JSONObject()
+                    .put("giorno", giornoInStringa(l.giorno))
+                    .put("materia", l.materia)
+                    .put("inizio", formattaOra(l.inizioMin))
+                    .put("fine", formattaOra(l.fineMin))
+            )
+        }
+        return try {
+            val f = fileOrario(context)
+            f.parentFile?.mkdirs()
+            f.writeText(JSONObject().put("lezioni", arr).toString(2))
+            versione++
+            true
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    private fun giornoInStringa(g: Int): String = when (g) {
+        Calendar.MONDAY -> "LUNEDI"
+        Calendar.TUESDAY -> "MARTEDI"
+        Calendar.WEDNESDAY -> "MERCOLEDI"
+        Calendar.THURSDAY -> "GIOVEDI"
+        Calendar.FRIDAY -> "VENERDI"
+        Calendar.SATURDAY -> "SABATO"
+        else -> "DOMENICA"
+    }
 
     fun carica(context: Context): List<Lezione> {
         val f = fileOrario(context)
@@ -50,7 +101,7 @@ object Timetable {
         return lezioni.filter { it.giorno == g && it.inizioMin > min }.minByOrNull { it.inizioMin }
     }
 
-    fun formattaOra(minuti: Int): String = String.format("%02d:%02d", minuti / 60, minuti % 60)
+    fun formattaOra(minuti: Int): String = String.format(Locale.ROOT, "%02d:%02d", minuti / 60, minuti % 60)
 
     private fun copiaDefault(context: Context, dest: File) {
         try {

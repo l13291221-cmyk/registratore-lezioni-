@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Orario"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:paddingBottom="8dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Ogni modifica si salva da sola. Ogni lezione diventa un file separato: se hai 2 ore di fila della stessa materia mettile come una lezione sola (es. 08:00–10:00)."
+            android:textSize="13sp"
+            android:paddingBottom="12dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Foto dell'orario"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:paddingBottom="6dp" />
+
+        <ImageView
+            android:id="@+id/foto"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:adjustViewBounds="true"
+            android:scaleType="fitCenter"
+            android:contentDescription="Foto dell'orario"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/fotoInfo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Nessuna foto. Allega lo screenshot dell'orario per averlo sempre qui mentre inserisci le lezioni."
+            android:textSize="13sp"
+            android:textColor="#888888"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btnFoto"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Allega foto orario" />
+
+            <Button
+                android:id="@+id/btnRimuoviFoto"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="Rimuovi" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#33808080"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="4dp" />
+
+        <LinearLayout
+            android:id="@+id/contenitore"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#33808080"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp" />
+
+        <Button
+            android:id="@+id/btnCancellaTutto"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Cancella tutto l'orario (per scriverne uno nuovo)" />
+    </LinearLayout>
+</ScrollView>

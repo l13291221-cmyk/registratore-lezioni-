@@ -43,7 +43,9 @@ class MainActivity : AppCompatActivity() {
             else chiediPermessi()
             b.root.postDelayed({ aggiornaStato() }, 700)
         }
-        b.btnRicaricaOrario.setOnClickListener { aggiornaStato() }
+        b.btnOrario.setOnClickListener {
+            startActivity(Intent(this, OrarioActivity::class.java))
+        }
         b.btnGuarda.setOnClickListener {
             startActivity(Intent(this, RegistrazioniActivity::class.java))
         }
