@@ -8,11 +8,6 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <!-- Notifica del servizio (Android 13+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <!-- Sveglie precise per far partire/fermare la registrazione all'orario esatto -->
-    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
-    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
-    <!-- Riprogramma dopo il riavvio del telefono -->
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!-- Tiene sveglia la CPU mentre registra a schermo spento -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <!-- Per chiedere l'esenzione dall'ottimizzazione batteria -->
@@ -45,21 +40,6 @@
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="microphone" />
-
-        <receiver
-            android:name=".AlarmReceiver"
-            android:enabled="true"
-            android:exported="false" />
-
-        <receiver
-            android:name=".BootReceiver"
-            android:enabled="true"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
-            </intent-filter>
-        </receiver>
 
         <!-- Genera URI content:// per condividere le registrazioni con altre app. -->
         <provider

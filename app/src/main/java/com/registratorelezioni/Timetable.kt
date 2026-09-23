@@ -33,6 +33,25 @@ object Timetable {
         return parse(testo)
     }
 
+    private fun minutoDelGiorno(now: Calendar): Int =
+        now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE)
+
+    /** La lezione in corso adesso, o null (intervallo / fuori orario). */
+    fun lezioneCorrente(lezioni: List<Lezione>, now: Calendar): Lezione? {
+        val g = now.get(Calendar.DAY_OF_WEEK)
+        val min = minutoDelGiorno(now)
+        return lezioni.firstOrNull { it.giorno == g && min >= it.inizioMin && min < it.fineMin }
+    }
+
+    /** La prossima lezione di oggi che deve ancora iniziare, o null. */
+    fun prossimaOggi(lezioni: List<Lezione>, now: Calendar): Lezione? {
+        val g = now.get(Calendar.DAY_OF_WEEK)
+        val min = minutoDelGiorno(now)
+        return lezioni.filter { it.giorno == g && it.inizioMin > min }.minByOrNull { it.inizioMin }
+    }
+
+    fun formattaOra(minuti: Int): String = String.format("%02d:%02d", minuti / 60, minuti % 60)
+
     private fun copiaDefault(context: Context, dest: File) {
         try {
             dest.parentFile?.mkdirs()

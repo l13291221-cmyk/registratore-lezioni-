@@ -1,7 +1,6 @@
 package com.registratorelezioni
 
 import android.Manifest
-import android.app.AlarmManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -10,7 +9,6 @@ import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
-import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -30,17 +28,19 @@ class MainActivity : AppCompatActivity() {
         setContentView(b.root)
 
         b.btnPermessi.setOnClickListener { chiediPermessi() }
-        b.btnEsatti.setOnClickListener { apriSvegliePrecise() }
         b.btnBatteria.setOnClickListener { apriEsenzioneBatteria() }
         b.btnAutostart.setOnClickListener { apriAutostart() }
 
-        b.btnAttivaAuto.setOnClickListener {
-            Scheduler.riprogramma(this)
-            aggiornaStato()
+        b.btnGiornata.setOnClickListener {
+            if (RecordingService.registrazioneInCorso) RecordingService.ferma(this)
+            else if (micConcesso()) RecordingService.avviaGiornata(this)
+            else chiediPermessi()
+            b.root.postDelayed({ aggiornaStato() }, 700)
         }
         b.btnManuale.setOnClickListener {
             if (RecordingService.registrazioneInCorso) RecordingService.ferma(this)
-            else RecordingService.avvia(this, "Manuale")
+            else if (micConcesso()) RecordingService.avviaManuale(this)
+            else chiediPermessi()
             b.root.postDelayed({ aggiornaStato() }, 700)
         }
         b.btnRicaricaOrario.setOnClickListener { aggiornaStato() }
@@ -49,10 +49,27 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // Aggiorna lo stato ogni pochi secondi mentre l'app è aperta.
+    private val aggiornaPeriodico = object : Runnable {
+        override fun run() {
+            aggiornaStato()
+            b.root.postDelayed(this, 3000)
+        }
+    }
+
     override fun onResume() {
         super.onResume()
-        aggiornaStato()
+        aggiornaPeriodico.run()
     }
+
+    override fun onPause() {
+        super.onPause()
+        b.root.removeCallbacks(aggiornaPeriodico)
+    }
+
+    private fun micConcesso(): Boolean =
+        ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) ==
+            PackageManager.PERMISSION_GRANTED
 
     private fun chiediPermessi() {
         val lista = mutableListOf(Manifest.permission.RECORD_AUDIO)
@@ -60,21 +77,6 @@ class MainActivity : AppCompatActivity() {
             lista.add(Manifest.permission.POST_NOTIFICATIONS)
         }
         richiediPermessi.launch(lista.toTypedArray())
-    }
-
-    private fun apriSvegliePrecise() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            try {
-                startActivity(
-                    Intent(
-                        Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,
-                        Uri.parse("package:$packageName")
-                    )
-                )
-                return
-            } catch (_: Exception) { }
-        }
-        apriDettagliApp()
     }
 
     private fun apriEsenzioneBatteria() {
@@ -128,29 +130,29 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun aggiornaStato() {
-        val micOk = ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) ==
-            PackageManager.PERMISSION_GRANTED
-        val esattiOk = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
-            (getSystemService(Context.ALARM_SERVICE) as AlarmManager).canScheduleExactAlarms() else true
+        val micOk = micConcesso()
         val batteriaOk = (getSystemService(Context.POWER_SERVICE) as PowerManager)
             .isIgnoringBatteryOptimizations(packageName)
 
         val lezioni = Timetable.carica(this)
+        val attivo = RecordingService.registrazioneInCorso
 
         val sb = StringBuilder()
-        sb.append(if (RecordingService.registrazioneInCorso) "🔴 STA REGISTRANDO" else "⚪ In attesa")
-        RecordingService.materiaInCorso?.let { sb.append("  ($it)") }
+        sb.append(RecordingService.stato)
         sb.append("\n\n")
         sb.append("Microfono: ${if (micOk) "OK ✅" else "manca ❌"}\n")
-        sb.append("Sveglie precise: ${if (esattiOk) "OK ✅" else "manca ❌"}\n")
         sb.append("Batteria libera: ${if (batteriaOk) "OK ✅" else "da fare ❌"}\n\n")
         sb.append("Lezioni caricate dall'orario: ${lezioni.size}")
         b.stato.text = sb.toString()
 
-        b.btnEsatti.visibility = if (esattiOk) View.GONE else View.VISIBLE
+        b.btnGiornata.text =
+            if (attivo && RecordingService.modoGiornata) "Ferma giornata"
+            else "▶ Avvia giornata (microfono sempre acceso)"
+        b.btnGiornata.isEnabled = !attivo || RecordingService.modoGiornata
         b.btnManuale.text =
-            if (RecordingService.registrazioneInCorso) "Ferma registrazione"
+            if (attivo && !RecordingService.modoGiornata) "Ferma registrazione manuale"
             else "Avvia registrazione manuale"
+        b.btnManuale.isEnabled = !attivo || !RecordingService.modoGiornata
 
         val cartella = getExternalFilesDir(null)?.absolutePath ?: "?"
         b.percorso.text = "Registrazioni e file orario.json in:\n$cartella"

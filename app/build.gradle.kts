@@ -11,8 +11,20 @@ android {
         applicationId = "com.registratorelezioni"
         minSdk = 26          // Android 8.0 in su (il Realme 12 è Android 14)
         targetSdk = 34       // Android 14
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "2.0"
+    }
+
+    // Chiave di firma fissa (inclusa nel repo): così ogni APK compilato da
+    // GitHub si installa come AGGIORNAMENTO sopra il precedente, senza dover
+    // disinstallare l'app (e perdere le registrazioni).
+    signingConfigs {
+        getByName("debug") {
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
     }
 
     buildTypes {
