@@ -1,0 +1,33 @@
+name: Raccoglitore email scuole
+
+on:
+  push:
+    paths:
+      - "raccoglitore/**"
+      - ".github/workflows/raccoglitore-email.yml"
+  workflow_dispatch:
+  schedule:
+    - cron: "17 5 1 * *" # il 1° di ogni mese, per avere i dati aggiornati
+
+jobs:
+  genera:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Scarica i dati e genera la pagina
+        run: python raccoglitore/scarica_scuole.py
+      # Link stabile:
+      # https://github.com/<owner>/<repo>/releases/download/raccoglitore-latest/raccoglitore-email.html
+      - name: Pubblica la pagina come Release (link diretto)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create raccoglitore-latest dist/raccoglitore-email.html \
+            --title "Raccoglitore email scuole" \
+            --notes "Email delle scuole superiori dell'Emilia-Romagna dagli open data del Ministero. Rigenerato automaticamente." \
+          || gh release upload raccoglitore-latest dist/raccoglitore-email.html --clobber
