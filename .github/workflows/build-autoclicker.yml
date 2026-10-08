@@ -1,0 +1,43 @@
+name: Build Autoclicker
+
+on:
+  push:
+    branches: [ "**" ]
+    paths:
+      - "autoclicker/**"
+      - ".github/workflows/build-autoclicker.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Installa MinGW-w64
+        run: sudo apt-get update && sudo apt-get install -y mingw-w64
+
+      - name: Compila autoclicker.exe
+        run: ./autoclicker/build.sh
+
+      - name: Upload exe
+        uses: actions/upload-artifact@v4
+        with:
+          name: autoclicker
+          path: autoclicker/autoclicker.exe
+          if-no-files-found: error
+
+      # Link diretto e stabile:
+      # https://github.com/<owner>/<repo>/releases/download/autoclicker-latest/autoclicker.exe
+      - name: Pubblica exe come Release (link diretto)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create autoclicker-latest autoclicker/autoclicker.exe \
+            --target "${{ github.sha }}" \
+            --title "Autoclicker per Windows" \
+            --notes "Ultima versione compilata automaticamente dal branch ${{ github.ref_name }}. Scarica autoclicker.exe e avvialo: F6 avvia/ferma, Esc ferma." \
+          || gh release upload autoclicker-latest autoclicker/autoclicker.exe --clobber
