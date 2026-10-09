@@ -1,0 +1,9 @@
+# Configurazione personale (password!): mai su GitHub
+.env
+
+# File creati dal programma
+stato.json
+debug/
+
+__pycache__/
+.venv/

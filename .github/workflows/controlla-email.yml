@@ -1,0 +1,88 @@
+name: Controlla email e apri il link
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'   # ogni 5 minuti (GitHub a volte ritarda di qualche minuto)
+    - cron: '7 4 * * *'     # una volta al giorno: in piu' tiene acceso il workflow
+  workflow_dispatch:
+    inputs:
+      prova:
+        description: 'Solo prova: mostra le email trovate senza aprire i link'
+        type: boolean
+        default: false
+
+# Mai due controlli insieme: lo stesso link non viene aperto due volte.
+concurrency:
+  group: controlla-email
+  cancel-in-progress: false
+
+jobs:
+  controlla:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: write   # serve solo al passo "Tieni attivo il workflow"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Installa le dipendenze
+        run: pip install -r requirements.txt
+
+      # Sui runner di GitHub Google Chrome c'e' gia'; se mancasse, si scarica Chromium.
+      - name: Prepara il browser
+        run: google-chrome --version || python -m playwright install --with-deps chromium
+
+      # stato.json ricorda quali email sono gia' state gestite (solo impronte,
+      # nessun dato personale). Passa da un'esecuzione all'altra con la cache.
+      - name: Recupera lo stato
+        uses: actions/cache/restore@v4
+        with:
+          path: stato.json
+          key: stato-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: stato-
+
+      - name: Controlla la posta e apri i link
+        id: bot
+        env:
+          EMAIL_INDIRIZZO: ${{ secrets.EMAIL_INDIRIZZO }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          IMAP_SERVER: ${{ secrets.IMAP_SERVER }}
+          CARTELLA: ${{ secrets.CARTELLA }}
+          EMAIL_MITTENTE: ${{ secrets.EMAIL_MITTENTE }}
+          EMAIL_OGGETTO: ${{ secrets.EMAIL_OGGETTO }}
+          LINK_CONTIENE: ${{ secrets.LINK_CONTIENE }}
+          LINK_TESTO: ${{ secrets.LINK_TESTO }}
+          SITO_UTENTE: ${{ secrets.SITO_UTENTE }}
+          SITO_PASSWORD: ${{ secrets.SITO_PASSWORD }}
+          SITO_DOMINIO: ${{ secrets.SITO_DOMINIO }}
+          SELETTORE_UTENTE: ${{ secrets.SELETTORE_UTENTE }}
+          SELETTORE_PASSWORD: ${{ secrets.SELETTORE_PASSWORD }}
+          SELETTORE_INVIO: ${{ secrets.SELETTORE_INVIO }}
+          TESTO_SUCCESSO: ${{ secrets.TESTO_SUCCESSO }}
+          ORE_MASSIME: ${{ secrets.ORE_MASSIME }}
+          ATTESA_SECONDI: ${{ secrets.ATTESA_SECONDI }}
+        run: python bot.py ${{ inputs.prova && '--prova' || '' }}
+
+      - name: Salva lo stato
+        if: always() && steps.bot.outputs.stato_cambiato == 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: stato.json
+          key: stato-${{ github.run_id }}-${{ github.run_attempt }}
+
+      # GitHub spegne i workflow programmati dopo 60 giorni senza attivita' nel
+      # repository: riattivarlo ogni giorno azzera il conto.
+      - name: Tieni attivo il workflow
+        if: github.event.schedule == '7 4 * * *'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/controlla-email.yml/enable"
