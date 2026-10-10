@@ -483,10 +483,32 @@ h1 {
 
   // ---------- aggiornamenti dal server ----------
 
+  // Copia cifrata dell'ordine (illeggibile qui): se il server si riavvia e lo perde, glielo rimandiamo.
+  const CHIAVE_SIGILLO = "ruota-sigillo";
+  let ultimoRipristino = 0;
+  function gestisciSigillo(dati) {
+    try {
+      if (dati.sigillo) {
+        if (localStorage.getItem(CHIAVE_SIGILLO) !== dati.sigillo) localStorage.setItem(CHIAVE_SIGILLO, dati.sigillo);
+      } else if (dati.chiedeSigillo && Date.now() - ultimoRipristino > 10000) {
+        const salvato = localStorage.getItem(CHIAVE_SIGILLO);
+        if (salvato) {
+          ultimoRipristino = Date.now();
+          fetch("/api/ripristina", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sigillo: salvato }),
+          }).catch(() => {});
+        }
+      }
+    } catch (e) { /* senza memoria del browser si va avanti lo stesso */ }
+  }
+
   async function controlla() {
     try {
       const r = await fetch("/api/ruota", { cache: "no-store" });
       const dati = await r.json();
+      gestisciSigillo(dati);
       if ($("messaggio").textContent.startsWith("Connessione")) $("messaggio").textContent = "Clicca la ruota per girarla";
       rimasti = dati.rimasti;
       const giro = dati.giro;

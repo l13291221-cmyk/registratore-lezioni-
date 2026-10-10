@@ -121,7 +121,7 @@ button:focus-visible, input:focus-visible, summary:focus-visible { outline: 3px 
 
     <section class="scheda" style="margin-top:14px">
       <h2>Ordine fisso: tocca i numeri nell'ordine in cui devono uscire</h2>
-      <p class="aiuto">Resta valido anche quando ricominciano dalla ruota: i numeri escono di nuovo così. Finito l'ordine, escono a caso.</p>
+      <p class="aiuto">Resta fisso finché non lo cambi tu da qui: anche quando ricominciano dalla ruota e anche se il server si riavvia. Finito l'ordine, i numeri rimasti escono a caso: per fissarli tutti, tocca tutti i 22.</p>
       <div class="griglia" id="griglia"></div>
       <ol class="coda" id="ordine"></ol>
       <div class="riga">
@@ -251,7 +251,7 @@ button:focus-visible, input:focus-visible, summary:focus-visible { outline: 3px 
   async function inviaOrdine(nuovo) {
     stato.ordine = nuovo;
     render();
-    try { stato = await chiama("POST", "/api/ordine", { ordine: nuovo }); render(); } catch (e) { /* al prossimo controllo */ }
+    try { stato = await chiama("POST", "/api/ordine", { ordine: nuovo }); render(); salvaCopia(); } catch (e) { /* al prossimo controllo */ }
   }
 
   $("griglia").addEventListener("click", (e) => {
@@ -291,10 +291,38 @@ button:focus-visible, input:focus-visible, summary:focus-visible { outline: 3px 
       stato = await chiama("POST", "/api/impostazioni", { numeri: Number($("campo-numeri").value) });
       $("msg-numeri").textContent = "Salvato: numeri da 1 a " + stato.numeri;
       render();
+      salvaCopia();
     } catch (e) {
       $("msg-numeri").textContent = e.message === "pin" ? "" : e.message;
     }
   });
+
+  // ---------- copia dell'ordine sul telefono ----------
+
+  const CHIAVE_COPIA = "ruota-ordine";
+  function salvaCopia() {
+    try { localStorage.setItem(CHIAVE_COPIA, JSON.stringify({ ordine: stato.ordine, numeri: stato.numeri })); } catch (e) { /* niente */ }
+  }
+  function leggiCopia() {
+    try {
+      const c = JSON.parse(localStorage.getItem(CHIAVE_COPIA) || "null");
+      return c && Array.isArray(c.ordine) && Number.isInteger(c.numeri) ? c : null;
+    } catch (e) { return null; }
+  }
+
+  // Se il server è appena ripartito e ha perso l'ordine, glielo rimandiamo noi.
+  let ripristinoInCorso = false;
+  async function sincronizzaCopia() {
+    if (stato.impostato) { salvaCopia(); return; }
+    const copia = leggiCopia();
+    if (!copia || ripristinoInCorso) return;
+    ripristinoInCorso = true;
+    try {
+      stato = await chiama("POST", "/api/impostazioni", { numeri: copia.numeri, ordine: copia.ordine });
+      render();
+    } catch (e) { /* riprova al prossimo controllo */ }
+    ripristinoInCorso = false;
+  }
 
   // ---------- aggiornamenti ----------
 
@@ -305,6 +333,7 @@ button:focus-visible, input:focus-visible, summary:focus-visible { outline: 3px 
       stato = await chiama("GET", "/api/telecomando");
       collegato(true);
       render();
+      sincronizzaCopia();
       timer = setTimeout(aggiornaDalServer, 1500);
     } catch (e) {
       if (e.message === "pin") return;
