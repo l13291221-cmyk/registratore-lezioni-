@@ -62,7 +62,7 @@ button:focus-visible, input:focus-visible, summary:focus-visible { outline: 3px 
   cursor: pointer;
 }
 .num.scelto { background: var(--oro); color: var(--oro-ink); border-color: var(--oro); }
-.num.uscito { opacity: 0.35; text-decoration: line-through; cursor: default; }
+.num.uscito { opacity: 0.4; text-decoration: line-through; }
 .num .pos {
   position: absolute;
   top: 3px;
@@ -87,7 +87,6 @@ button:focus-visible, input:focus-visible, summary:focus-visible { outline: 3px 
 .bottone.oro { background: var(--oro); color: var(--oro-ink); border-color: var(--oro); }
 .bottone.pericolo { border-color: var(--rosso); color: var(--rosso); }
 .bottone:disabled { opacity: 0.5; cursor: default; }
-.gira { width: 100%; padding: 18px; font-size: 1.15rem; }
 .riga { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
 .usciti { margin: 12px 0 0; font: 400 1.05rem/1.7 var(--f-titolo); color: var(--testo); word-spacing: 0.3em; }
 .campo { width: 5.5em; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--linea); background: var(--palco); text-align: center; }
@@ -117,24 +116,20 @@ button:focus-visible, input:focus-visible, summary:focus-visible { outline: 3px 
         <h2>Il prossimo a uscire</h2>
         <span class="prossimo-numero" id="prossimo">–</span>
       </div>
-      <p class="aiuto" id="prossimo-aiuto">Nessuno scelto: uscirà un numero a caso.</p>
+      <p class="aiuto" id="prossimo-aiuto">Nessun ordine fissato: uscirà un numero a caso.</p>
     </section>
 
     <section class="scheda" style="margin-top:14px">
-      <h2>Tocca i numeri nell'ordine in cui devono uscire</h2>
+      <h2>Ordine fisso: tocca i numeri nell'ordine in cui devono uscire</h2>
+      <p class="aiuto">Resta valido anche quando ricominciano dalla ruota: i numeri escono di nuovo così. Finito l'ordine, escono a caso.</p>
       <div class="griglia" id="griglia"></div>
-      <ol class="coda" id="coda"></ol>
+      <ol class="coda" id="ordine"></ol>
       <div class="riga">
         <button class="bottone" id="svuota" type="button">Svuota l'ordine</button>
       </div>
     </section>
 
-    <div style="margin-top:14px">
-      <button class="bottone oro gira" id="gira" type="button">Fai girare la ruota</button>
-      <p class="messaggio" id="msg-gira" style="margin-top:8px;text-align:center"></p>
-    </div>
-
-    <section class="scheda" style="margin-top:6px">
+    <section class="scheda" style="margin-top:14px">
       <h2>Usciti finora</h2>
       <p class="usciti" id="usciti"></p>
       <div class="riga">
@@ -198,24 +193,27 @@ button:focus-visible, input:focus-visible, summary:focus-visible { outline: 3px 
     if (!stato) return;
     $("contenuto").hidden = false;
     const fuori = new Set(stato.usciti);
-    const posizione = new Map(stato.coda.map((n, i) => [n, i + 1]));
+    const posizione = new Map(stato.ordine.map((n, i) => [n, i + 1]));
 
-    const prossimo = stato.coda[0];
+    // il prossimo è il primo dell'ordine non ancora uscito
+    const daUscire = stato.ordine.filter((n) => !fuori.has(n));
+    const prossimo = daUscire[0];
     $("prossimo").textContent = prossimo || (stato.rimasti.length ? "?" : "–");
-    $("prossimo-aiuto").textContent = prossimo
-      ? "Poi: " + (stato.coda.slice(1).join(", ") || "a caso")
-      : stato.rimasti.length ? "Nessuno scelto: uscirà un numero a caso." : "Sono usciti tutti i numeri.";
+    $("prossimo-aiuto").textContent = !stato.rimasti.length
+      ? "Sono usciti tutti i numeri."
+      : prossimo
+        ? "Poi: " + (daUscire.slice(1).join(", ") || "a caso")
+        : stato.ordine.length ? "L'ordine è finito: adesso esce a caso." : "Nessun ordine fissato: uscirà un numero a caso.";
 
     const griglia = $("griglia");
     griglia.textContent = "";
     for (let n = 1; n <= stato.numeri; n++) {
       const b = document.createElement("button");
       b.type = "button";
-      b.className = "num" + (fuori.has(n) ? " uscito" : posizione.has(n) ? " scelto" : "");
+      b.className = "num" + (posizione.has(n) ? " scelto" : "") + (fuori.has(n) ? " uscito" : "");
       b.dataset.n = n;
       b.textContent = n;
-      b.disabled = fuori.has(n);
-      b.setAttribute("aria-label", fuori.has(n) ? n + ", già uscito" : posizione.has(n) ? n + ", " + posizione.get(n) + "° a uscire" : String(n));
+      b.setAttribute("aria-label", n + (posizione.has(n) ? ", " + posizione.get(n) + "° nell'ordine" : "") + (fuori.has(n) ? ", già uscito" : ""));
       if (posizione.has(n)) {
         const pos = document.createElement("span");
         pos.className = "pos";
@@ -225,9 +223,9 @@ button:focus-visible, input:focus-visible, summary:focus-visible { outline: 3px 
       griglia.appendChild(b);
     }
 
-    const coda = $("coda");
-    coda.textContent = "";
-    stato.coda.forEach((n, i) => {
+    const lista = $("ordine");
+    lista.textContent = "";
+    stato.ordine.forEach((n, i) => {
       const li = document.createElement("li");
       const ord = document.createElement("span"); ord.className = "ord"; ord.textContent = (i + 1) + "°";
       const num = document.createElement("span"); num.textContent = n;
@@ -235,12 +233,11 @@ button:focus-visible, input:focus-visible, summary:focus-visible { outline: 3px 
       x.type = "button"; x.className = "togli"; x.textContent = "×"; x.dataset.n = n;
       x.setAttribute("aria-label", "Togli il " + n + " dall'ordine");
       li.append(ord, num, x);
-      coda.appendChild(li);
+      lista.appendChild(li);
     });
-    $("svuota").disabled = !stato.coda.length;
+    $("svuota").disabled = !stato.ordine.length;
 
     $("usciti").textContent = stato.usciti.length ? stato.usciti.join("  ") : "Ancora nessuno.";
-    $("gira").disabled = !stato.rimasti.length;
     if (document.activeElement !== $("campo-numeri")) $("campo-numeri").value = stato.numeri;
   }
 
@@ -251,39 +248,25 @@ button:focus-visible, input:focus-visible, summary:focus-visible { outline: 3px 
 
   // ---------- azioni ----------
 
-  async function inviaCoda(nuova) {
-    stato.coda = nuova;
+  async function inviaOrdine(nuovo) {
+    stato.ordine = nuovo;
     render();
-    try { stato = await chiama("POST", "/api/coda", { coda: nuova }); render(); } catch (e) { /* al prossimo controllo */ }
+    try { stato = await chiama("POST", "/api/ordine", { ordine: nuovo }); render(); } catch (e) { /* al prossimo controllo */ }
   }
 
   $("griglia").addEventListener("click", (e) => {
     const b = e.target.closest(".num");
-    if (!b || b.disabled || !stato) return;
+    if (!b || !stato) return;
     const n = Number(b.dataset.n);
-    inviaCoda(stato.coda.includes(n) ? stato.coda.filter((x) => x !== n) : [...stato.coda, n]);
+    inviaOrdine(stato.ordine.includes(n) ? stato.ordine.filter((x) => x !== n) : [...stato.ordine, n]);
   });
 
-  $("coda").addEventListener("click", (e) => {
+  $("ordine").addEventListener("click", (e) => {
     const x = e.target.closest(".togli");
-    if (x && stato) inviaCoda(stato.coda.filter((n) => n !== Number(x.dataset.n)));
+    if (x && stato) inviaOrdine(stato.ordine.filter((n) => n !== Number(x.dataset.n)));
   });
 
-  $("svuota").addEventListener("click", () => inviaCoda([]));
-
-  $("gira").addEventListener("click", async () => {
-    const b = $("gira");
-    b.disabled = true;
-    try {
-      const dati = await chiama("POST", "/api/gira");
-      $("msg-gira").textContent = "Sta girando: uscirà il " + dati.giro.numero;
-    } catch (e) {
-      $("msg-gira").textContent = e.message === "pin" ? "" : e.message;
-    }
-    setTimeout(() => { $("msg-gira").textContent = ""; }, 7000);
-    setTimeout(() => { b.disabled = false; }, 2500);
-    aggiornaDalServer();
-  });
+  $("svuota").addEventListener("click", () => inviaOrdine([]));
 
   // Doppio tocco per confermare: evita di azzerare tutto per sbaglio.
   let confermaRicomincia = null;

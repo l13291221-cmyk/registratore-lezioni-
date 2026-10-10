@@ -1,5 +1,6 @@
 // Ruota della Sorte: server senza dipendenze per Render (piano gratuito).
 // Dal computer "/" mostra solo la ruota; dal telefono mostra il telecomando.
+// Dal telefono si fissa l'ordine di uscita: resta valido anche dopo "Ricomincia".
 // Lo stato vive in memoria: si azzera quando Render spegne o riavvia il servizio.
 
 const http = require("http");
@@ -20,7 +21,7 @@ const pagine = {
 const stato = {
   numeri: NUMERI_INIZIALI,
   usciti: [],
-  coda: [],
+  ordine: [],
   giro: null,
   contatore: 0,
 };
@@ -32,7 +33,7 @@ function rimasti() {
   return lista;
 }
 
-// Quello che vede il computer: niente coda, così la ruota non svela il trucco.
+// Quello che vede il computer: niente ordine, così la ruota non svela il trucco.
 function vistaRuota() {
   return { rimasti: rimasti(), giro: stato.giro };
 }
@@ -42,35 +43,37 @@ function vistaTelecomando() {
     numeri: stato.numeri,
     rimasti: rimasti(),
     usciti: stato.usciti,
-    coda: stato.coda,
+    ordine: stato.ordine,
     giro: stato.giro,
   };
 }
 
-// Il prossimo della coda ancora in ruota; se la coda è vuota, uno a caso.
+// Il primo numero dell'ordine fissato che non è ancora uscito; finito l'ordine, uno a caso.
+// L'ordine non si consuma: dopo "Ricomincia" i numeri escono di nuovo uguali.
+function prossimoDellOrdine() {
+  const fuori = new Set(stato.usciti);
+  const n = stato.ordine.find((x) => x <= stato.numeri && !fuori.has(x));
+  return n === undefined ? null : n;
+}
+
 function gira() {
   const r = rimasti();
   if (!r.length) return null;
-  let numero = null;
-  while (stato.coda.length) {
-    const candidato = stato.coda.shift();
-    if (r.includes(candidato)) { numero = candidato; break; }
-  }
+  let numero = prossimoDellOrdine();
   if (numero === null) numero = r[crypto.randomInt(r.length)];
   stato.usciti.push(numero);
   stato.giro = { id: ++stato.contatore, numero, ruota: r, quando: Date.now() };
   return stato.giro;
 }
 
-function pulisciCoda(lista) {
-  const validi = new Set(rimasti());
+function pulisciOrdine(lista) {
   const visti = new Set();
-  const coda = [];
+  const ordine = [];
   for (const valore of Array.isArray(lista) ? lista : []) {
     const n = Number(valore);
-    if (validi.has(n) && !visti.has(n)) { visti.add(n); coda.push(n); }
+    if (Number.isInteger(n) && n >= 1 && n <= stato.numeri && !visti.has(n)) { visti.add(n); ordine.push(n); }
   }
-  return coda;
+  return ordine;
 }
 
 function eTelefono(req) {
@@ -123,14 +126,21 @@ const server = http.createServer(async (req, res) => {
     return inviaJson(res, 200, { giro, ...vistaRuota() });
   }
 
+  // Anche dalla ruota si può ricominciare: tutti i numeri tornano in ruota.
+  if (metodo === "POST" && percorso === "/api/ricomincia") {
+    stato.usciti = [];
+    stato.giro = null;
+    return inviaJson(res, 200, vistaRuota());
+  }
+
   if (percorso.startsWith("/api/")) {
     if (!pinValido(req)) return inviaJson(res, 401, { errore: "PIN sbagliato" });
 
     if (metodo === "GET" && percorso === "/api/telecomando") return inviaJson(res, 200, vistaTelecomando());
 
-    if (metodo === "POST" && percorso === "/api/coda") {
+    if (metodo === "POST" && percorso === "/api/ordine") {
       const corpo = await leggiCorpo(req);
-      stato.coda = pulisciCoda(corpo.coda);
+      stato.ordine = pulisciOrdine(corpo.ordine);
       return inviaJson(res, 200, vistaTelecomando());
     }
 
@@ -142,13 +152,7 @@ const server = http.createServer(async (req, res) => {
       }
       stato.numeri = numeri;
       stato.usciti = stato.usciti.filter((n) => n <= numeri);
-      stato.coda = pulisciCoda(stato.coda);
-      return inviaJson(res, 200, vistaTelecomando());
-    }
-
-    if (metodo === "POST" && percorso === "/api/ricomincia") {
-      stato.usciti = [];
-      stato.giro = null;
+      stato.ordine = pulisciOrdine(stato.ordine);
       return inviaJson(res, 200, vistaTelecomando());
     }
   }

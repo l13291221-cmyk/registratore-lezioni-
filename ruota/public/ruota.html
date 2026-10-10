@@ -75,7 +75,19 @@ h1 {
 }
 .mozzo:disabled { cursor: default; }
 .mozzo:focus-visible { outline: 4px solid var(--testo); outline-offset: 4px; }
-.piede { margin: 0; min-height: 1.5em; color: var(--tenue); font-size: 0.9rem; text-align: center; }
+.piede { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; min-height: 2.6em; color: var(--tenue); font-size: 0.9rem; text-align: center; }
+.ricomincia {
+  font: 600 0.9rem/1 var(--f-testo);
+  color: var(--testo);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 205, 69, 0.45);
+  border-radius: 999px;
+  padding: 9px 16px;
+  cursor: pointer;
+}
+.ricomincia:hover { background: rgba(255, 205, 69, 0.14); }
+.ricomincia.conferma { background: var(--oro); color: var(--oro-ink); border-color: var(--oro); }
+.ricomincia:focus-visible { outline: 3px solid var(--testo); outline-offset: 2px; }
 
 .vincita {
   position: fixed;
@@ -115,7 +127,10 @@ h1 {
     <button class="mozzo" id="mozzo" type="button">Gira</button>
   </div>
 </div>
-<p class="piede" id="piede">Clicca la ruota per girarla</p>
+<div class="piede" id="piede">
+  <span id="messaggio">Clicca la ruota per girarla</span>
+  <button class="ricomincia" id="ricomincia" type="button">Ricomincia</button>
+</div>
 
 <div class="vincita" id="vincita" hidden>
   <div class="vincita-carta" role="alertdialog" aria-labelledby="vincita-numero">
@@ -345,7 +360,7 @@ h1 {
       girando = false;
       $("mozzo").disabled = false;
       if (risposta && risposta.dati.rimasti) { rimasti = risposta.dati.rimasti; mostrati = rimasti.slice(); disegna(); }
-      $("piede").textContent = risposta ? (risposta.dati.errore || "Non è stato possibile girare") : "Connessione assente: riprova tra poco";
+      $("messaggio").textContent = risposta ? (risposta.dati.errore || "Non è stato possibile girare") : "Connessione assente: riprova tra poco";
       return;
     }
     ultimoGiro = risposta.dati.giro.id;
@@ -366,7 +381,7 @@ h1 {
   function mostraVincita(numero) {
     $("vincita-numero").textContent = numero;
     $("vincita").hidden = false;
-    $("piede").textContent = "";
+    $("messaggio").textContent = "Clicca la ruota per girarla";
     fanfara();
     if (!riduciMoto) coriandoli();
     clearTimeout(timerChiudi);
@@ -419,11 +434,46 @@ h1 {
     })(t0);
   }
 
+  // ---------- ricomincia (doppio clic per confermare) ----------
+
+  let timerConferma = null;
+  $("ricomincia").addEventListener("click", async (e) => {
+    e.stopPropagation();
+    const b = $("ricomincia");
+    if (girando) return;
+    if (!timerConferma) {
+      b.classList.add("conferma");
+      b.textContent = "Clicca di nuovo per ricominciare";
+      timerConferma = setTimeout(annullaConferma, 3000);
+      return;
+    }
+    annullaConferma();
+    try {
+      const r = await fetch("/api/ricomincia", { method: "POST" });
+      const dati = await r.json();
+      rimasti = dati.rimasti;
+      chiudiVincita();
+      mostrati = rimasti.slice();
+      disegna();
+      $("messaggio").textContent = "Tutti i numeri sono di nuovo in ruota";
+      setTimeout(() => { $("messaggio").textContent = "Clicca la ruota per girarla"; }, 3000);
+    } catch (err) {
+      $("messaggio").textContent = "Connessione assente: riprova tra poco";
+    }
+  });
+  function annullaConferma() {
+    clearTimeout(timerConferma);
+    timerConferma = null;
+    $("ricomincia").classList.remove("conferma");
+    $("ricomincia").textContent = "Ricomincia";
+  }
+
   // ---------- comandi ----------
 
   $("mozzo").addEventListener("click", giraDaQui);
   tela.addEventListener("click", giraDaQui);
   document.addEventListener("keydown", (e) => {
+    if (e.target.closest && e.target.closest("#ricomincia")) return;
     if (e.code === "Space" || e.key === "Enter") {
       e.preventDefault();
       if (!$("vincita").hidden) chiudiVincita(); else giraDaQui();
@@ -437,7 +487,7 @@ h1 {
     try {
       const r = await fetch("/api/ruota", { cache: "no-store" });
       const dati = await r.json();
-      if ($("piede").textContent.startsWith("Connessione")) $("piede").textContent = "";
+      if ($("messaggio").textContent.startsWith("Connessione")) $("messaggio").textContent = "Clicca la ruota per girarla";
       rimasti = dati.rimasti;
       const giro = dati.giro;
       if (ultimoGiro === null) {
@@ -452,7 +502,7 @@ h1 {
       }
       setTimeout(controlla, 1000);
     } catch (e) {
-      $("piede").textContent = "Connessione al server…";
+      $("messaggio").textContent = "Connessione al server…";
       setTimeout(controlla, 3000);
     }
   }

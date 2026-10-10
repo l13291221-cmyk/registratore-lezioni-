@@ -2,11 +2,13 @@
 
 Ruota della fortuna con i numeri da 1 a 22.
 
-- **Dal computer** il link mostra **solo la ruota** (da mostrare a schermo).
-- **Dal telefono** lo stesso link apre il **telecomando**: scegli quali numeri
-  escono e in che ordine, fai girare la ruota, ricominci, cambi quanti numeri ci
-  sono.
-- Un numero uscito non può uscire di nuovo. Se non scegli niente, esce a caso.
+- **Dal computer** il link mostra **solo la ruota** (da mostrare a schermo): si
+  gira cliccandola e il pulsante **Ricomincia** (doppio clic) rimette tutti i
+  numeri in ruota.
+- **Dal telefono** lo stesso link apre il **telecomando**: fissi l'ordine in cui
+  escono i numeri e cambi quanti numeri ci sono.
+- L'ordine è fisso: dopo ogni Ricomincia i numeri escono di nuovo uguali. Finito
+  l'ordine, escono a caso. Un numero uscito non può uscire di nuovo.
 
 ## Attivarla su Render (gratis)
 
