@@ -76,18 +76,26 @@ h1 {
 .mozzo:disabled { cursor: default; }
 .mozzo:focus-visible { outline: 4px solid var(--testo); outline-offset: 4px; }
 .piede { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; min-height: 2.6em; color: var(--tenue); font-size: 0.9rem; text-align: center; }
-.ricomincia {
-  font: 600 0.9rem/1 var(--f-testo);
-  color: var(--testo);
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 205, 69, 0.45);
-  border-radius: 999px;
-  padding: 9px 16px;
+.reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: 400 1rem/1 var(--f-titolo);
+  letter-spacing: 0.04em;
+  color: var(--oro-ink);
+  background: var(--oro);
+  border: 0;
+  border-radius: 12px;
+  padding: 11px 18px;
   cursor: pointer;
+  box-shadow: 0 3px 0 var(--oro-scuro);
 }
-.ricomincia:hover { background: rgba(255, 205, 69, 0.14); }
-.ricomincia.conferma { background: var(--oro); color: var(--oro-ink); border-color: var(--oro); }
-.ricomincia:focus-visible { outline: 3px solid var(--testo); outline-offset: 2px; }
+.reset svg { width: 1.1em; height: 1.1em; }
+.reset:hover { filter: brightness(1.06); }
+.reset:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--oro-scuro); }
+.reset.fatto svg { animation: giro-icona 500ms ease-out; }
+.reset:focus-visible { outline: 3px solid var(--testo); outline-offset: 3px; }
+@keyframes giro-icona { from { transform: rotate(0); } to { transform: rotate(-360deg); } }
 
 .vincita {
   position: fixed;
@@ -129,7 +137,10 @@ h1 {
 </div>
 <div class="piede" id="piede">
   <span id="messaggio">Clicca la ruota per girarla</span>
-  <button class="ricomincia" id="ricomincia" type="button">Ricomincia</button>
+  <button class="reset" id="reset" type="button" aria-label="Reset: rimetti tutti i numeri nella ruota">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+    Reset
+  </button>
 </div>
 
 <div class="vincita" id="vincita" hidden>
@@ -434,20 +445,16 @@ h1 {
     })(t0);
   }
 
-  // ---------- ricomincia (doppio clic per confermare) ----------
+  // ---------- reset: rimette tutti i numeri, la ruota resta ferma ----------
 
-  let timerConferma = null;
-  $("ricomincia").addEventListener("click", async (e) => {
+  $("reset").addEventListener("click", async (e) => {
     e.stopPropagation();
-    const b = $("ricomincia");
+    const b = $("reset");
+    b.blur(); // così la barra spaziatrice dopo fa girare la ruota, non un altro reset
     if (girando) return;
-    if (!timerConferma) {
-      b.classList.add("conferma");
-      b.textContent = "Clicca di nuovo per ricominciare";
-      timerConferma = setTimeout(annullaConferma, 3000);
-      return;
-    }
-    annullaConferma();
+    b.classList.remove("fatto");
+    void b.offsetWidth;
+    b.classList.add("fatto");
     try {
       const r = await fetch("/api/ricomincia", { method: "POST" });
       const dati = await r.json();
@@ -455,25 +462,18 @@ h1 {
       chiudiVincita();
       mostrati = rimasti.slice();
       disegna();
-      $("messaggio").textContent = "Tutti i numeri sono di nuovo in ruota";
-      setTimeout(() => { $("messaggio").textContent = "Clicca la ruota per girarla"; }, 3000);
+      $("messaggio").textContent = "Clicca la ruota per girarla";
     } catch (err) {
       $("messaggio").textContent = "Connessione assente: riprova tra poco";
     }
   });
-  function annullaConferma() {
-    clearTimeout(timerConferma);
-    timerConferma = null;
-    $("ricomincia").classList.remove("conferma");
-    $("ricomincia").textContent = "Ricomincia";
-  }
 
   // ---------- comandi ----------
 
   $("mozzo").addEventListener("click", giraDaQui);
   tela.addEventListener("click", giraDaQui);
   document.addEventListener("keydown", (e) => {
-    if (e.target.closest && e.target.closest("#ricomincia")) return;
+    if (e.target.closest && e.target.closest("#reset")) return;
     if (e.code === "Space" || e.key === "Enter") {
       e.preventDefault();
       if (!$("vincita").hidden) chiudiVincita(); else giraDaQui();

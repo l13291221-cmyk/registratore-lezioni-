@@ -121,7 +121,7 @@ button:focus-visible, input:focus-visible, summary:focus-visible { outline: 3px 
 
     <section class="scheda" style="margin-top:14px">
       <h2>Ordine fisso: tocca i numeri nell'ordine in cui devono uscire</h2>
-      <p class="aiuto">Resta fisso finché non lo cambi tu da qui: anche quando ricominciano dalla ruota e anche se il server si riavvia. Finito l'ordine, i numeri rimasti escono a caso: per fissarli tutti, tocca tutti i 22.</p>
+      <p class="aiuto">Resta fisso finché non lo cambi tu da qui: anche quando fanno Reset dalla ruota e anche se il server si riavvia. Finito l'ordine, i numeri rimasti escono a caso: per fissarli tutti, tocca tutti i 22.</p>
       <div class="griglia" id="griglia"></div>
       <ol class="coda" id="ordine"></ol>
       <div class="riga">
@@ -133,7 +133,7 @@ button:focus-visible, input:focus-visible, summary:focus-visible { outline: 3px 
       <h2>Usciti finora</h2>
       <p class="usciti" id="usciti"></p>
       <div class="riga">
-        <button class="bottone pericolo" id="ricomincia" type="button">Ricomincia: rimetti tutti nella ruota</button>
+        <button class="bottone pericolo" id="ricomincia" type="button">Reset: rimetti tutti nella ruota</button>
       </div>
     </section>
 
@@ -276,13 +276,13 @@ button:focus-visible, input:focus-visible, summary:focus-visible { outline: 3px 
       b.textContent = "Tocca di nuovo per confermare";
       confermaRicomincia = setTimeout(() => {
         confermaRicomincia = null;
-        b.textContent = "Ricomincia: rimetti tutti nella ruota";
+        b.textContent = "Reset: rimetti tutti nella ruota";
       }, 3000);
       return;
     }
     clearTimeout(confermaRicomincia);
     confermaRicomincia = null;
-    b.textContent = "Ricomincia: rimetti tutti nella ruota";
+    b.textContent = "Reset: rimetti tutti nella ruota";
     try { stato = await chiama("POST", "/api/ricomincia"); render(); } catch (e) { /* niente */ }
   });
 
