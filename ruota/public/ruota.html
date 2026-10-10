@@ -42,8 +42,9 @@ h1 {
   user-select: none;
   text-align: center;
 }
-.scena { width: 100%; height: 100%; display: grid; place-items: center; min-height: 0; }
-.ruota-box { position: relative; aspect-ratio: 1; height: min(100%, 94vw); max-width: 100%; }
+.scena { width: 100%; display: grid; place-items: center; min-height: 0; }
+/* misura di riserva; lo script la imposta in pixel esatti per ogni schermo */
+.ruota-box { position: relative; width: min(92vw, 70vh); height: min(92vw, 70vh); }
 .ruota-box canvas { width: 100%; height: 100%; display: block; cursor: pointer; }
 .lancetta {
   position: absolute;
@@ -234,6 +235,22 @@ h1 {
     ombra.addColorStop(0, "rgba(0,0,0,0)");
     ombra.addColorStop(1, "rgba(0,0,0,0.22)");
     ctx.beginPath(); ctx.arc(c, c, rS, 0, TAU); ctx.fillStyle = ombra; ctx.fill();
+  }
+
+  // Lato della ruota = il più grande quadrato che entra tra titolo e scritta in basso.
+  // Calcolato a mano perché Safari su iPhone sbagliava la misura fatta solo con il CSS.
+  function adattaRuota() {
+    const box = $("ruota-box");
+    const sopra = document.querySelector("h1").getBoundingClientRect().bottom;
+    const sotto = $("piede").offsetHeight;
+    const margine = Math.max(16, window.innerHeight * 0.02) * 2 + 12;
+    const alto = window.innerHeight - sopra - sotto - margine;
+    const largo = document.documentElement.clientWidth - 32;
+    const lato = Math.floor(Math.max(200, Math.min(alto, largo)));
+    box.style.width = lato + "px";
+    box.style.height = lato + "px";
+    $("mozzo").style.fontSize = Math.round(lato * 0.048) + "px";
+    dimensiona();
   }
 
   function segmentoSotto(n) {
@@ -440,9 +457,9 @@ h1 {
     }
   }
 
-  if ("ResizeObserver" in window) new ResizeObserver(dimensiona).observe($("ruota-box"));
-  else window.addEventListener("resize", dimensiona);
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (!girando) disegna(); });
+  window.addEventListener("resize", adattaRuota);
+  window.addEventListener("orientationchange", () => setTimeout(adattaRuota, 200));
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(adattaRuota);
 
   if (!riduciMoto) setInterval(() => {
     if (girando) return;
@@ -450,7 +467,7 @@ h1 {
     disegna();
   }, 700);
 
-  dimensiona();
+  adattaRuota();
   controlla();
 })();
 </script>
