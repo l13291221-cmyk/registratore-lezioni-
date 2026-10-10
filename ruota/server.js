@@ -1,0 +1,161 @@
+// Ruota della Sorte: server senza dipendenze per Render (piano gratuito).
+// Dal computer "/" mostra solo la ruota; dal telefono mostra il telecomando.
+// Lo stato vive in memoria: si azzera quando Render spegne o riavvia il servizio.
+
+const http = require("http");
+const fs = require("fs");
+const path = require("path");
+const crypto = require("crypto");
+
+const PORTA = Number(process.env.PORT) || 3000;
+const PIN = (process.env.PIN || "").trim();
+const NUMERI_INIZIALI = 22;
+const MAX_NUMERI = 99;
+
+const pagine = {
+  ruota: fs.readFileSync(path.join(__dirname, "public", "ruota.html")),
+  telecomando: fs.readFileSync(path.join(__dirname, "public", "telecomando.html")),
+};
+
+const stato = {
+  numeri: NUMERI_INIZIALI,
+  usciti: [],
+  coda: [],
+  giro: null,
+  contatore: 0,
+};
+
+function rimasti() {
+  const fuori = new Set(stato.usciti);
+  const lista = [];
+  for (let n = 1; n <= stato.numeri; n++) if (!fuori.has(n)) lista.push(n);
+  return lista;
+}
+
+// Quello che vede il computer: niente coda, così la ruota non svela il trucco.
+function vistaRuota() {
+  return { rimasti: rimasti(), giro: stato.giro };
+}
+
+function vistaTelecomando() {
+  return {
+    numeri: stato.numeri,
+    rimasti: rimasti(),
+    usciti: stato.usciti,
+    coda: stato.coda,
+    giro: stato.giro,
+  };
+}
+
+// Il prossimo della coda ancora in ruota; se la coda è vuota, uno a caso.
+function gira() {
+  const r = rimasti();
+  if (!r.length) return null;
+  let numero = null;
+  while (stato.coda.length) {
+    const candidato = stato.coda.shift();
+    if (r.includes(candidato)) { numero = candidato; break; }
+  }
+  if (numero === null) numero = r[crypto.randomInt(r.length)];
+  stato.usciti.push(numero);
+  stato.giro = { id: ++stato.contatore, numero, ruota: r, quando: Date.now() };
+  return stato.giro;
+}
+
+function pulisciCoda(lista) {
+  const validi = new Set(rimasti());
+  const visti = new Set();
+  const coda = [];
+  for (const valore of Array.isArray(lista) ? lista : []) {
+    const n = Number(valore);
+    if (validi.has(n) && !visti.has(n)) { visti.add(n); coda.push(n); }
+  }
+  return coda;
+}
+
+function eTelefono(req) {
+  return /Mobi|Android|iPhone|iPod|iPad|Windows Phone/i.test(req.headers["user-agent"] || "");
+}
+
+function inviaJson(res, codice, dati) {
+  res.writeHead(codice, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
+  res.end(JSON.stringify(dati));
+}
+
+function inviaPagina(res, nome) {
+  res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache" });
+  res.end(pagine[nome]);
+}
+
+function leggiCorpo(req) {
+  return new Promise((risolvi) => {
+    let dati = "";
+    req.on("data", (pezzo) => {
+      dati += pezzo;
+      if (dati.length > 10000) req.destroy();
+    });
+    req.on("end", () => {
+      try { risolvi(dati ? JSON.parse(dati) : {}); } catch (e) { risolvi({}); }
+    });
+    req.on("error", () => risolvi({}));
+  });
+}
+
+function pinValido(req) {
+  return !PIN || req.headers["x-pin"] === PIN;
+}
+
+const server = http.createServer(async (req, res) => {
+  const url = new URL(req.url, "http://localhost");
+  const percorso = url.pathname.replace(/\/+$/, "") || "/";
+  const metodo = req.method;
+
+  if (metodo === "GET" && percorso === "/") return inviaPagina(res, eTelefono(req) ? "telecomando" : "ruota");
+  if (metodo === "GET" && percorso === "/ruota") return inviaPagina(res, "ruota");
+  if (metodo === "GET" && percorso === "/telecomando") return inviaPagina(res, "telecomando");
+  if (metodo === "GET" && percorso === "/salute") return inviaJson(res, 200, { ok: true });
+
+  if (metodo === "GET" && percorso === "/api/ruota") return inviaJson(res, 200, vistaRuota());
+
+  if (metodo === "POST" && percorso === "/api/gira") {
+    const giro = gira();
+    if (!giro) return inviaJson(res, 409, { errore: "Sono usciti tutti i numeri", ...vistaRuota() });
+    return inviaJson(res, 200, { giro, ...vistaRuota() });
+  }
+
+  if (percorso.startsWith("/api/")) {
+    if (!pinValido(req)) return inviaJson(res, 401, { errore: "PIN sbagliato" });
+
+    if (metodo === "GET" && percorso === "/api/telecomando") return inviaJson(res, 200, vistaTelecomando());
+
+    if (metodo === "POST" && percorso === "/api/coda") {
+      const corpo = await leggiCorpo(req);
+      stato.coda = pulisciCoda(corpo.coda);
+      return inviaJson(res, 200, vistaTelecomando());
+    }
+
+    if (metodo === "POST" && percorso === "/api/impostazioni") {
+      const corpo = await leggiCorpo(req);
+      const numeri = Math.round(Number(corpo.numeri));
+      if (!Number.isFinite(numeri) || numeri < 2 || numeri > MAX_NUMERI) {
+        return inviaJson(res, 400, { errore: `Scegli un numero tra 2 e ${MAX_NUMERI}` });
+      }
+      stato.numeri = numeri;
+      stato.usciti = stato.usciti.filter((n) => n <= numeri);
+      stato.coda = pulisciCoda(stato.coda);
+      return inviaJson(res, 200, vistaTelecomando());
+    }
+
+    if (metodo === "POST" && percorso === "/api/ricomincia") {
+      stato.usciti = [];
+      stato.giro = null;
+      return inviaJson(res, 200, vistaTelecomando());
+    }
+  }
+
+  inviaJson(res, 404, { errore: "Pagina non trovata" });
+});
+
+server.listen(PORTA, "0.0.0.0", () => {
+  console.log(`Ruota della Sorte pronta sulla porta ${PORTA}${PIN ? " (telecomando protetto da PIN)" : ""}`);
+});

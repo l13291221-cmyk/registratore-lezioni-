@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ruota della Sorte</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Rubik:wght@500;700&display=swap">
+<style>
+/* Solo la ruota, grande e al centro: è la schermata da mostrare a tutti. */
+:root {
+  color-scheme: dark;
+  --palco: #150e2c;
+  --testo: #f6f1ff;
+  --tenue: #b0a5d4;
+  --oro: #ffcd45;
+  --oro-scuro: #b9861a;
+  --oro-ink: #241503;
+  --f-titolo: "Bungee", "Arial Black", Impact, sans-serif;
+  --f-testo: "Rubik", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  overflow: hidden;
+  background: radial-gradient(ellipse 80% 60% at 50% 0%, #34256f 0%, var(--palco) 62%) var(--palco);
+  color: var(--testo);
+  font: 16px/1.5 var(--f-testo);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  justify-items: center;
+  padding: 2vh 16px;
+}
+h1 {
+  margin: 0;
+  font: 400 clamp(1.6rem, 5.5vh, 3.2rem)/1 var(--f-titolo);
+  color: var(--oro);
+  letter-spacing: 0.02em;
+  text-shadow: 0 3px 0 var(--oro-scuro), 0 0 28px rgba(255, 205, 69, 0.35);
+  user-select: none;
+  text-align: center;
+}
+.scena { width: 100%; height: 100%; display: grid; place-items: center; min-height: 0; }
+.ruota-box { position: relative; aspect-ratio: 1; height: min(100%, 94vw); max-width: 100%; }
+.ruota-box canvas { width: 100%; height: 100%; display: block; cursor: pointer; }
+.lancetta {
+  position: absolute;
+  top: -1.5%;
+  left: 50%;
+  width: 8%;
+  transform: translateX(-50%);
+  transform-origin: 50% 20%;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5));
+  transition: transform 90ms ease-out;
+  pointer-events: none;
+}
+.lancetta.tic { transform: translateX(-50%) rotate(-16deg); transition: none; }
+.mozzo {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 20%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 0;
+  cursor: pointer;
+  background: radial-gradient(circle at 35% 30%, #fff3c4 0%, var(--oro) 38%, var(--oro-scuro) 100%);
+  color: var(--oro-ink);
+  font: 400 clamp(0.9rem, 3.4vh, 2rem)/1 var(--f-titolo);
+  box-shadow: 0 0 0 6px rgba(36, 21, 3, 0.55), 0 10px 24px rgba(0, 0, 0, 0.45);
+}
+.mozzo:disabled { cursor: default; }
+.mozzo:focus-visible { outline: 4px solid var(--testo); outline-offset: 4px; }
+.piede { margin: 0; min-height: 1.5em; color: var(--tenue); font-size: 0.9rem; text-align: center; }
+
+.vincita {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(10, 6, 24, 0.7);
+  cursor: pointer;
+}
+.vincita-carta { text-align: center; display: grid; gap: 10px; justify-items: center; animation: entra 420ms cubic-bezier(.2, 1.4, .4, 1); }
+.vincita-etichetta { font: 700 1rem/1 var(--f-testo); letter-spacing: 0.2em; text-transform: uppercase; color: var(--tenue); }
+.vincita-numero {
+  font: 400 clamp(6rem, 34vh, 18rem)/1 var(--f-titolo);
+  color: var(--oro);
+  text-shadow: 0 8px 0 var(--oro-scuro), 0 0 60px rgba(255, 205, 69, 0.5);
+}
+@keyframes entra { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.coriandoli { position: fixed; inset: 0; pointer-events: none; z-index: 21; width: 100%; height: 100%; }
+[hidden] { display: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .vincita-carta { animation: none; }
+  .lancetta { transition: none; }
+}
+</style>
+</head>
+<body>
+<h1>Ruota della Sorte</h1>
+<div class="scena">
+  <div class="ruota-box" id="ruota-box">
+    <canvas id="ruota" role="img" aria-label="Ruota con i numeri"></canvas>
+    <svg class="lancetta" id="lancetta" viewBox="0 0 40 56" aria-hidden="true">
+      <path d="M20 54 L3 10 A17 17 0 0 1 37 10 Z" fill="#ffcd45" stroke="#241503" stroke-width="3" stroke-linejoin="round"/>
+      <circle cx="20" cy="14" r="5" fill="#241503"/>
+    </svg>
+    <button class="mozzo" id="mozzo" type="button">Gira</button>
+  </div>
+</div>
+<p class="piede" id="piede">Clicca la ruota per girarla</p>
+
+<div class="vincita" id="vincita" hidden>
+  <div class="vincita-carta" role="alertdialog" aria-labelledby="vincita-numero">
+    <div class="vincita-etichetta">È uscito il</div>
+    <div class="vincita-numero" id="vincita-numero"></div>
+  </div>
+</div>
+<canvas class="coriandoli" id="coriandoli" hidden></canvas>
+
+<script>
+(function () {
+  "use strict";
+
+  const $ = (id) => document.getElementById(id);
+  const TAU = Math.PI * 2;
+  const PUNTATORE = Math.PI * 1.5; // la lancetta è in alto
+  const COLORI = ["#ff4f5e", "#ffc23d", "#2ec4a0", "#3b7dff", "#a65bff", "#ff8a3d", "#17b6d8", "#ff5fa8"];
+  const riduciMoto = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const tela = $("ruota");
+  const ctx = tela.getContext("2d");
+  let rimasti = [];           // numeri in ruota secondo il server
+  let mostrati = [];          // numeri disegnati adesso (durante un giro: quelli di quel giro)
+  let angolo = 0;
+  let girando = false;
+  let ultimoGiro = null;      // id dell'ultimo giro già mostrato
+  let giroInAttesa = null;
+  let faseLuci = 0;
+  let ultimoSegmento = -1;
+  let timerChiudi = null;
+
+  const pausa = (ms) => new Promise((r) => setTimeout(r, ms));
+  const modulo = (x, m) => ((x % m) + m) % m;
+
+  // ---------- disegno ----------
+
+  function dimensiona() {
+    const lato = tela.getBoundingClientRect().width;
+    if (!lato) return;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    tela.width = Math.round(lato * dpr);
+    tela.height = Math.round(lato * dpr);
+    disegna();
+  }
+
+  function luminosa(hex) {
+    const n = parseInt(hex.slice(1), 16);
+    return 0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255) > 150;
+  }
+
+  function coloreSegmento(i, n) {
+    let c = i % COLORI.length;
+    if (n > 1 && i === n - 1 && c === 0) c = 2; // l'ultimo spicchio non uguale al primo
+    return COLORI[c];
+  }
+
+  function disegna() {
+    const W = tela.width;
+    if (!W) return;
+    const c = W / 2, R = c * 0.97, rS = R * 0.87;
+    ctx.clearRect(0, 0, W, W);
+
+    const bordo = ctx.createRadialGradient(c, c, rS, c, c, R);
+    bordo.addColorStop(0, "#7a5410");
+    bordo.addColorStop(0.5, "#ffcd45");
+    bordo.addColorStop(1, "#8a5f12");
+    ctx.beginPath(); ctx.arc(c, c, R, 0, TAU); ctx.fillStyle = bordo; ctx.fill();
+
+    const NB = 28;
+    for (let i = 0; i < NB; i++) {
+      const a = (i / NB) * TAU, rb = (R + rS) / 2, accesa = (i + faseLuci) % 2 === 0;
+      ctx.beginPath();
+      ctx.arc(c + Math.cos(a) * rb, c + Math.sin(a) * rb, (R - rS) * 0.22, 0, TAU);
+      ctx.fillStyle = accesa ? "#fff6d6" : "#6b4a10";
+      ctx.shadowColor = accesa ? "rgba(255,240,180,0.9)" : "transparent";
+      ctx.shadowBlur = accesa ? W * 0.012 : 0;
+      ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+
+    const n = mostrati.length;
+    if (!n) {
+      ctx.beginPath(); ctx.arc(c, c, rS, 0, TAU); ctx.fillStyle = "#221747"; ctx.fill();
+      ctx.fillStyle = "#b0a5d4";
+      ctx.font = "700 " + Math.round(W * 0.04) + "px Rubik, sans-serif";
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText("Sono usciti tutti", c, c + W * 0.2);
+      return;
+    }
+    const s = TAU / n;
+    const dim = Math.min(rS * 0.13, s * rS * 0.62);
+    for (let i = 0; i < n; i++) {
+      const a0 = angolo + i * s;
+      const colore = coloreSegmento(i, n);
+      ctx.beginPath();
+      ctx.moveTo(c, c);
+      ctx.arc(c, c, rS, a0, a0 + s);
+      ctx.closePath();
+      ctx.fillStyle = colore;
+      ctx.fill();
+      ctx.lineWidth = Math.max(1, W * 0.003);
+      ctx.strokeStyle = "rgba(20,10,40,0.35)";
+      ctx.stroke();
+
+      // numero dritto quando lo spicchio passa sotto la lancetta
+      ctx.save();
+      ctx.translate(c, c);
+      ctx.rotate(a0 + s / 2 + Math.PI / 2);
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = luminosa(colore) ? "#1d1033" : "#ffffff";
+      ctx.font = "400 " + dim + "px Bungee, 'Arial Black', sans-serif";
+      ctx.fillText(String(mostrati[i]), 0, -rS * 0.8);
+      ctx.restore();
+    }
+    const ombra = ctx.createRadialGradient(c, c, rS * 0.75, c, c, rS);
+    ombra.addColorStop(0, "rgba(0,0,0,0)");
+    ombra.addColorStop(1, "rgba(0,0,0,0.22)");
+    ctx.beginPath(); ctx.arc(c, c, rS, 0, TAU); ctx.fillStyle = ombra; ctx.fill();
+  }
+
+  function segmentoSotto(n) {
+    if (!n) return -1;
+    return Math.floor(modulo(PUNTATORE - angolo, TAU) / (TAU / n)) % n;
+  }
+
+  // ---------- suoni (partono dopo il primo clic sulla pagina) ----------
+
+  let audio = null;
+  function sbloccaAudio() {
+    try {
+      if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+      if (audio.state === "suspended") audio.resume();
+    } catch (e) { audio = null; }
+  }
+  document.addEventListener("pointerdown", sbloccaAudio, { passive: true });
+  document.addEventListener("keydown", sbloccaAudio);
+
+  function nota(freq, inizio, durata, volume, tipo) {
+    if (!audio || audio.state !== "running") return;
+    const t = audio.currentTime + inizio;
+    const o = audio.createOscillator(), v = audio.createGain();
+    o.type = tipo;
+    o.frequency.value = freq;
+    v.gain.setValueAtTime(volume, t);
+    v.gain.exponentialRampToValueAtTime(0.0001, t + durata);
+    o.connect(v); v.connect(audio.destination);
+    o.start(t); o.stop(t + durata + 0.02);
+  }
+  const suonoTic = () => nota(1500, 0, 0.03, 0.08, "square");
+  const fanfara = () => [523, 659, 784, 1047].forEach((f, i) => nota(f, i * 0.12, 0.35, 0.12, "triangle"));
+
+  const lancetta = $("lancetta");
+  function controllaTic() {
+    const i = segmentoSotto(mostrati.length);
+    if (i !== ultimoSegmento) {
+      ultimoSegmento = i;
+      suonoTic();
+      lancetta.classList.add("tic");
+      setTimeout(() => lancetta.classList.remove("tic"), 60);
+    }
+  }
+
+  function anima(da, a, durata, curva) {
+    return new Promise((fine) => {
+      const t0 = performance.now();
+      function passo(t) {
+        const p = Math.min(1, (t - t0) / durata);
+        angolo = da + (a - da) * curva(p);
+        faseLuci = Math.floor(t / 90) % 2;
+        controllaTic();
+        disegna();
+        if (p < 1) requestAnimationFrame(passo); else fine();
+      }
+      requestAnimationFrame(passo);
+    });
+  }
+  const dolce = (p) => (p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2);
+  const rallenta = (p) => 1 - Math.pow(1 - p, 3.6);
+
+  // ---------- giro ----------
+
+  async function eseguiGiro(giro, giaCaricata) {
+    mostrati = giro.ruota.slice();
+    const indice = mostrati.indexOf(giro.numero);
+    if (!giaCaricata) await anima(angolo, angolo - 0.25, 380, dolce);
+    const s = TAU / mostrati.length;
+    const arrivo = PUNTATORE - (indice + 0.2 + Math.random() * 0.6) * s;
+    const giri = 5 + Math.floor(Math.random() * 3);
+    const finale = angolo + modulo(arrivo - angolo, TAU) + giri * TAU;
+    await anima(angolo, finale, riduciMoto ? 1800 : 5200 + giri * 260, rallenta);
+    angolo = modulo(angolo, TAU);
+    await pausa(300);
+    mostraVincita(giro.numero);
+  }
+
+  async function giraDaQui() {
+    if (girando) return;
+    girando = true;
+    chiudiVincita();
+    $("mozzo").disabled = true;
+    // un piccolo passo indietro mentre il server sceglie il numero
+    const carica = anima(angolo, angolo - 0.25, 380, dolce);
+    let risposta = null;
+    try {
+      const r = await fetch("/api/gira", { method: "POST" });
+      risposta = { ok: r.ok, dati: await r.json() };
+    } catch (e) { risposta = null; }
+    await carica;
+    if (!risposta || !risposta.ok || !risposta.dati.giro) {
+      girando = false;
+      $("mozzo").disabled = false;
+      if (risposta && risposta.dati.rimasti) { rimasti = risposta.dati.rimasti; mostrati = rimasti.slice(); disegna(); }
+      $("piede").textContent = risposta ? (risposta.dati.errore || "Non è stato possibile girare") : "Connessione assente: riprova tra poco";
+      return;
+    }
+    ultimoGiro = risposta.dati.giro.id;
+    rimasti = risposta.dati.rimasti;
+    await eseguiGiro(risposta.dati.giro, true);
+  }
+
+  async function giraDaTelecomando(giro) {
+    if (girando) { giroInAttesa = giro; return; }
+    girando = true;
+    chiudiVincita();
+    $("mozzo").disabled = true;
+    await eseguiGiro(giro, false);
+  }
+
+  // ---------- vincitore ----------
+
+  function mostraVincita(numero) {
+    $("vincita-numero").textContent = numero;
+    $("vincita").hidden = false;
+    $("piede").textContent = "";
+    fanfara();
+    if (!riduciMoto) coriandoli();
+    clearTimeout(timerChiudi);
+    timerChiudi = setTimeout(chiudiVincita, 8000);
+    girando = false;
+    if (giroInAttesa) {
+      const g = giroInAttesa;
+      giroInAttesa = null;
+      setTimeout(() => giraDaTelecomando(g), 2500);
+    }
+  }
+
+  function chiudiVincita() {
+    clearTimeout(timerChiudi);
+    $("vincita").hidden = true;
+    if (!girando) {
+      $("mozzo").disabled = false;
+      mostrati = rimasti.slice();
+      disegna();
+    }
+  }
+  $("vincita").addEventListener("click", chiudiVincita);
+
+  function coriandoli() {
+    const cv = $("coriandoli");
+    const c2 = cv.getContext("2d");
+    cv.hidden = false;
+    cv.width = innerWidth; cv.height = innerHeight;
+    const pezzi = Array.from({ length: 180 }, () => ({
+      x: innerWidth / 2 + (Math.random() - 0.5) * innerWidth * 0.3,
+      y: innerHeight * 0.45,
+      vx: (Math.random() - 0.5) * 18,
+      vy: -Math.random() * 16 - 5,
+      r: Math.random() * TAU,
+      vr: (Math.random() - 0.5) * 0.4,
+      w: 7 + Math.random() * 8,
+      colore: COLORI[Math.floor(Math.random() * COLORI.length)],
+    }));
+    const t0 = performance.now();
+    (function passo(t) {
+      c2.clearRect(0, 0, cv.width, cv.height);
+      for (const p of pezzi) {
+        p.vy += 0.38; p.vx *= 0.99; p.x += p.vx; p.y += p.vy; p.r += p.vr;
+        c2.save(); c2.translate(p.x, p.y); c2.rotate(p.r);
+        c2.fillStyle = p.colore; c2.fillRect(-p.w / 2, -p.w / 4, p.w, p.w / 2);
+        c2.restore();
+      }
+      if (t - t0 < 3200) requestAnimationFrame(passo);
+      else { c2.clearRect(0, 0, cv.width, cv.height); cv.hidden = true; }
+    })(t0);
+  }
+
+  // ---------- comandi ----------
+
+  $("mozzo").addEventListener("click", giraDaQui);
+  tela.addEventListener("click", giraDaQui);
+  document.addEventListener("keydown", (e) => {
+    if (e.code === "Space" || e.key === "Enter") {
+      e.preventDefault();
+      if (!$("vincita").hidden) chiudiVincita(); else giraDaQui();
+    }
+    if (e.key === "Escape") chiudiVincita();
+  });
+
+  // ---------- aggiornamenti dal server ----------
+
+  async function controlla() {
+    try {
+      const r = await fetch("/api/ruota", { cache: "no-store" });
+      const dati = await r.json();
+      if ($("piede").textContent.startsWith("Connessione")) $("piede").textContent = "";
+      rimasti = dati.rimasti;
+      const giro = dati.giro;
+      if (ultimoGiro === null) {
+        ultimoGiro = giro ? giro.id : 0; // all'apertura non ripete l'ultimo giro
+      } else if (giro && giro.id > ultimoGiro) {
+        ultimoGiro = giro.id;
+        giraDaTelecomando(giro);
+      }
+      if (!girando && $("vincita").hidden && mostrati.join() !== rimasti.join()) {
+        mostrati = rimasti.slice();
+        disegna();
+      }
+      setTimeout(controlla, 1000);
+    } catch (e) {
+      $("piede").textContent = "Connessione al server…";
+      setTimeout(controlla, 3000);
+    }
+  }
+
+  if ("ResizeObserver" in window) new ResizeObserver(dimensiona).observe($("ruota-box"));
+  else window.addEventListener("resize", dimensiona);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (!girando) disegna(); });
+
+  if (!riduciMoto) setInterval(() => {
+    if (girando) return;
+    faseLuci = 1 - faseLuci;
+    disegna();
+  }, 700);
+
+  dimensiona();
+  controlla();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Telecomando · Ruota della Sorte</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Rubik:wght@400;500;600;700&display=swap">
+<style>
+/* Pannello da telefono: una colonna, bersagli grandi, scuro per non dare nell'occhio. */
+:root {
+  color-scheme: dark;
+  --palco: #150e2c;
+  --palco-2: #221747;
+  --pannello: #1c1440;
+  --linea: #382b68;
+  --testo: #f6f1ff;
+  --tenue: #b0a5d4;
+  --oro: #ffcd45;
+  --oro-ink: #241503;
+  --verde: #4fe0a9;
+  --rosso: #ff6b7a;
+  --f-titolo: "Bungee", "Arial Black", Impact, sans-serif;
+  --f-testo: "Rubik", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--palco);
+  color: var(--testo);
+  font: 16px/1.5 var(--f-testo);
+  padding: max(16px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
+}
+button, input { font: inherit; color: inherit; }
+button:focus-visible, input:focus-visible, summary:focus-visible { outline: 3px solid var(--oro); outline-offset: 2px; }
+.pagina { max-width: 520px; margin: 0 auto; display: grid; gap: 14px; }
+.testa { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.testa h1 { margin: 0; font: 400 1.3rem/1 var(--f-titolo); color: var(--oro); }
+.chip { font: 600 0.75rem/1 var(--f-testo); padding: 7px 10px; border-radius: 999px; border: 1px solid var(--linea); color: var(--tenue); }
+.chip.ok { color: #06281b; background: var(--verde); border-color: var(--verde); }
+.scheda { background: var(--pannello); border: 1px solid var(--linea); border-radius: 16px; padding: 16px; }
+.scheda h2, .scheda summary {
+  margin: 0;
+  font: 700 0.75rem/1.3 var(--f-testo);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--tenue);
+}
+.scheda summary { cursor: pointer; }
+.prossimo { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.prossimo-numero { font: 400 2.4rem/1 var(--f-titolo); color: var(--oro); }
+.aiuto { margin: 6px 0 0; color: var(--tenue); font-size: 0.9rem; }
+.griglia { display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: 8px; margin-top: 12px; }
+.num {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  border: 1px solid var(--linea);
+  background: var(--palco-2);
+  font: 400 1.15rem/1 var(--f-titolo);
+  cursor: pointer;
+}
+.num.scelto { background: var(--oro); color: var(--oro-ink); border-color: var(--oro); }
+.num.uscito { opacity: 0.35; text-decoration: line-through; cursor: default; }
+.num .pos {
+  position: absolute;
+  top: 3px;
+  right: 5px;
+  font: 700 0.62rem/1 var(--f-testo);
+}
+.coda { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 0; padding: 0; list-style: none; }
+.coda li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--palco);
+  border: 1px solid var(--linea);
+  border-radius: 999px;
+  padding: 4px 4px 4px 12px;
+  font-weight: 600;
+}
+.coda .ord { color: var(--oro); font: 400 0.8rem/1 var(--f-titolo); }
+.togli { border: 0; background: none; color: var(--tenue); width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 1.1rem; }
+.vuoto { margin: 12px 0 0; color: var(--tenue); font-size: 0.95rem; }
+.bottone { border-radius: 12px; padding: 12px 16px; font-weight: 600; cursor: pointer; border: 1px solid var(--linea); background: var(--palco-2); }
+.bottone.oro { background: var(--oro); color: var(--oro-ink); border-color: var(--oro); }
+.bottone.pericolo { border-color: var(--rosso); color: var(--rosso); }
+.bottone:disabled { opacity: 0.5; cursor: default; }
+.gira { width: 100%; padding: 18px; font-size: 1.15rem; }
+.riga { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+.usciti { margin: 12px 0 0; font: 400 1.05rem/1.7 var(--f-titolo); color: var(--testo); word-spacing: 0.3em; }
+.campo { width: 5.5em; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--linea); background: var(--palco); text-align: center; }
+.messaggio { margin: 0; min-height: 1.4em; color: var(--tenue); font-size: 0.9rem; }
+.pin { display: grid; gap: 10px; }
+.pin input { width: 100%; padding: 14px; border-radius: 12px; border: 1px solid var(--linea); background: var(--palco); font-size: 1.2rem; text-align: center; letter-spacing: 0.3em; }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="pagina">
+  <div class="testa">
+    <h1>Telecomando</h1>
+    <span class="chip" id="chip">Collegamento…</span>
+  </div>
+
+  <form class="scheda pin" id="form-pin" hidden>
+    <h2>PIN del telecomando</h2>
+    <input id="campo-pin" type="password" inputmode="numeric" autocomplete="off" aria-label="PIN">
+    <button class="bottone oro" type="submit">Entra</button>
+    <p class="messaggio" id="msg-pin"></p>
+  </form>
+
+  <div id="contenuto" hidden>
+    <section class="scheda">
+      <div class="prossimo">
+        <h2>Il prossimo a uscire</h2>
+        <span class="prossimo-numero" id="prossimo">–</span>
+      </div>
+      <p class="aiuto" id="prossimo-aiuto">Nessuno scelto: uscirà un numero a caso.</p>
+    </section>
+
+    <section class="scheda" style="margin-top:14px">
+      <h2>Tocca i numeri nell'ordine in cui devono uscire</h2>
+      <div class="griglia" id="griglia"></div>
+      <ol class="coda" id="coda"></ol>
+      <div class="riga">
+        <button class="bottone" id="svuota" type="button">Svuota l'ordine</button>
+      </div>
+    </section>
+
+    <div style="margin-top:14px">
+      <button class="bottone oro gira" id="gira" type="button">Fai girare la ruota</button>
+      <p class="messaggio" id="msg-gira" style="margin-top:8px;text-align:center"></p>
+    </div>
+
+    <section class="scheda" style="margin-top:6px">
+      <h2>Usciti finora</h2>
+      <p class="usciti" id="usciti"></p>
+      <div class="riga">
+        <button class="bottone pericolo" id="ricomincia" type="button">Ricomincia: rimetti tutti nella ruota</button>
+      </div>
+    </section>
+
+    <details class="scheda" style="margin-top:14px">
+      <summary>Impostazioni della ruota</summary>
+      <div class="riga">
+        <label for="campo-numeri">Numeri da 1 a</label>
+        <input class="campo" id="campo-numeri" type="number" min="2" max="99" inputmode="numeric">
+        <button class="bottone oro" id="salva-numeri" type="button">Salva</button>
+      </div>
+      <p class="messaggio" id="msg-numeri" style="margin-top:8px"></p>
+    </details>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  const $ = (id) => document.getElementById(id);
+  let stato = null;
+  let pin = "";
+  try { pin = localStorage.getItem("ruota-pin") || ""; } catch (e) { /* niente */ }
+
+  async function chiama(metodo, percorso, corpo) {
+    const r = await fetch(percorso, {
+      method: metodo,
+      cache: "no-store",
+      headers: { "Content-Type": "application/json", "x-pin": pin },
+      body: corpo ? JSON.stringify(corpo) : undefined,
+    });
+    const dati = await r.json().catch(() => ({}));
+    if (r.status === 401) { chiediPin(pin ? "PIN sbagliato" : ""); throw new Error("pin"); }
+    if (!r.ok) throw Object.assign(new Error(dati.errore || "Errore"), { dati });
+    return dati;
+  }
+
+  function chiediPin(messaggio) {
+    $("form-pin").hidden = false;
+    $("contenuto").hidden = true;
+    $("msg-pin").textContent = messaggio || "";
+    $("chip").textContent = "Serve il PIN";
+    $("chip").classList.remove("ok");
+  }
+
+  $("form-pin").addEventListener("submit", (e) => {
+    e.preventDefault();
+    pin = $("campo-pin").value.trim();
+    try { localStorage.setItem("ruota-pin", pin); } catch (err) { /* niente */ }
+    $("form-pin").hidden = true;
+    aggiornaDalServer();
+  });
+
+  // ---------- disegno ----------
+
+  function render() {
+    if (!stato) return;
+    $("contenuto").hidden = false;
+    const fuori = new Set(stato.usciti);
+    const posizione = new Map(stato.coda.map((n, i) => [n, i + 1]));
+
+    const prossimo = stato.coda[0];
+    $("prossimo").textContent = prossimo || (stato.rimasti.length ? "?" : "–");
+    $("prossimo-aiuto").textContent = prossimo
+      ? "Poi: " + (stato.coda.slice(1).join(", ") || "a caso")
+      : stato.rimasti.length ? "Nessuno scelto: uscirà un numero a caso." : "Sono usciti tutti i numeri.";
+
+    const griglia = $("griglia");
+    griglia.textContent = "";
+    for (let n = 1; n <= stato.numeri; n++) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "num" + (fuori.has(n) ? " uscito" : posizione.has(n) ? " scelto" : "");
+      b.dataset.n = n;
+      b.textContent = n;
+      b.disabled = fuori.has(n);
+      b.setAttribute("aria-label", fuori.has(n) ? n + ", già uscito" : posizione.has(n) ? n + ", " + posizione.get(n) + "° a uscire" : String(n));
+      if (posizione.has(n)) {
+        const pos = document.createElement("span");
+        pos.className = "pos";
+        pos.textContent = posizione.get(n) + "°";
+        b.appendChild(pos);
+      }
+      griglia.appendChild(b);
+    }
+
+    const coda = $("coda");
+    coda.textContent = "";
+    stato.coda.forEach((n, i) => {
+      const li = document.createElement("li");
+      const ord = document.createElement("span"); ord.className = "ord"; ord.textContent = (i + 1) + "°";
+      const num = document.createElement("span"); num.textContent = n;
+      const x = document.createElement("button");
+      x.type = "button"; x.className = "togli"; x.textContent = "×"; x.dataset.n = n;
+      x.setAttribute("aria-label", "Togli il " + n + " dall'ordine");
+      li.append(ord, num, x);
+      coda.appendChild(li);
+    });
+    $("svuota").disabled = !stato.coda.length;
+
+    $("usciti").textContent = stato.usciti.length ? stato.usciti.join("  ") : "Ancora nessuno.";
+    $("gira").disabled = !stato.rimasti.length;
+    if (document.activeElement !== $("campo-numeri")) $("campo-numeri").value = stato.numeri;
+  }
+
+  function collegato(ok) {
+    $("chip").textContent = ok ? "Collegato" : "Server in avvio…";
+    $("chip").classList.toggle("ok", ok);
+  }
+
+  // ---------- azioni ----------
+
+  async function inviaCoda(nuova) {
+    stato.coda = nuova;
+    render();
+    try { stato = await chiama("POST", "/api/coda", { coda: nuova }); render(); } catch (e) { /* al prossimo controllo */ }
+  }
+
+  $("griglia").addEventListener("click", (e) => {
+    const b = e.target.closest(".num");
+    if (!b || b.disabled || !stato) return;
+    const n = Number(b.dataset.n);
+    inviaCoda(stato.coda.includes(n) ? stato.coda.filter((x) => x !== n) : [...stato.coda, n]);
+  });
+
+  $("coda").addEventListener("click", (e) => {
+    const x = e.target.closest(".togli");
+    if (x && stato) inviaCoda(stato.coda.filter((n) => n !== Number(x.dataset.n)));
+  });
+
+  $("svuota").addEventListener("click", () => inviaCoda([]));
+
+  $("gira").addEventListener("click", async () => {
+    const b = $("gira");
+    b.disabled = true;
+    try {
+      const dati = await chiama("POST", "/api/gira");
+      $("msg-gira").textContent = "Sta girando: uscirà il " + dati.giro.numero;
+    } catch (e) {
+      $("msg-gira").textContent = e.message === "pin" ? "" : e.message;
+    }
+    setTimeout(() => { $("msg-gira").textContent = ""; }, 7000);
+    setTimeout(() => { b.disabled = false; }, 2500);
+    aggiornaDalServer();
+  });
+
+  // Doppio tocco per confermare: evita di azzerare tutto per sbaglio.
+  let confermaRicomincia = null;
+  $("ricomincia").addEventListener("click", async () => {
+    const b = $("ricomincia");
+    if (!confermaRicomincia) {
+      b.textContent = "Tocca di nuovo per confermare";
+      confermaRicomincia = setTimeout(() => {
+        confermaRicomincia = null;
+        b.textContent = "Ricomincia: rimetti tutti nella ruota";
+      }, 3000);
+      return;
+    }
+    clearTimeout(confermaRicomincia);
+    confermaRicomincia = null;
+    b.textContent = "Ricomincia: rimetti tutti nella ruota";
+    try { stato = await chiama("POST", "/api/ricomincia"); render(); } catch (e) { /* niente */ }
+  });
+
+  $("salva-numeri").addEventListener("click", async () => {
+    try {
+      stato = await chiama("POST", "/api/impostazioni", { numeri: Number($("campo-numeri").value) });
+      $("msg-numeri").textContent = "Salvato: numeri da 1 a " + stato.numeri;
+      render();
+    } catch (e) {
+      $("msg-numeri").textContent = e.message === "pin" ? "" : e.message;
+    }
+  });
+
+  // ---------- aggiornamenti ----------
+
+  let timer = null;
+  async function aggiornaDalServer() {
+    clearTimeout(timer);
+    try {
+      stato = await chiama("GET", "/api/telecomando");
+      collegato(true);
+      render();
+      timer = setTimeout(aggiornaDalServer, 1500);
+    } catch (e) {
+      if (e.message === "pin") return;
+      collegato(false);
+      timer = setTimeout(aggiornaDalServer, 3000);
+    }
+  }
+
+  aggiornaDalServer();
+})();
+</script>
+</body>
+</html>

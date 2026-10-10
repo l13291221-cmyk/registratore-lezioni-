@@ -1,0 +1,13 @@
+{
+  "name": "ruota-della-sorte",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Ruota della fortuna con i numeri: il computer mostra la ruota, il telefono fa da telecomando.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
