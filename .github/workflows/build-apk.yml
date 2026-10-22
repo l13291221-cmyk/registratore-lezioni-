@@ -1,0 +1,58 @@
+name: Build APK
+
+on:
+  push:
+    branches: [ "**" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          # Pacchetti per compileSdk 35 (build-tools 34 è quello usato da AGP 8.7).
+          # Va evitato il pacchetto obsoleto "tools" (default dell'azione).
+          packages: 'platform-tools platforms;android-35 build-tools;34.0.0'
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Test
+        run: ./gradlew testDebugUnitTest --stacktrace
+
+      - name: Build debug APK
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: Rinomina APK
+        run: cp app/build/outputs/apk/debug/app-debug.apk AnimeFit.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: animefit-apk
+          path: AnimeFit.apk
+          if-no-files-found: error
+
+      # Pubblica l'APK come asset di una Release: link diretto e stabile
+      # https://github.com/<owner>/<repo>/releases/download/animefit-latest/AnimeFit.apk
+      - name: Pubblica APK come Release (link diretto)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create animefit-latest AnimeFit.apk \
+            --title "AnimeFit - APK più recente" \
+            --notes "Ultimo APK di AnimeFit compilato automaticamente dal branch ${{ github.ref_name }}." \
+          || gh release upload animefit-latest AnimeFit.apk --clobber
